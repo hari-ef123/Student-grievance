@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Grievance System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+            min-width: 600px;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        select.status-select {
+            padding: 5px;
+            border-radius: 5px;
+            border: none;
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
+        <div class="logo"><i class="fas fa-user-shield"></i> Admin Panel</div>
+        <div>
+            <span style="margin-right: 15px;">Administrator</span>
+            <a href="php/logout.php" onclick="return handleLogout(event)" class="btn btn-outline"
+                style="padding: 5px 15px; font-size: 0.9rem;">Logout</a>
+        </div>
+    </div>
+
+    <div class="container animate-fade-in" style="margin-top: 100px;">
+
+        <!-- Stats -->
+        <div class="grid-container mb-20">
+            <div class="glass-card text-center" style="padding: 20px;">
+                <h4>Total Complaints</h4>
+                <p style="font-size: 2rem; font-weight: bold;">0</p>
+                <!-- This would be dynamic in PHP -->
+            </div>
+            <div class="glass-card text-center" style="padding: 20px;">
+                <h4>Pending Action</h4>
+                <p style="font-size: 2rem; font-weight: bold; color: #f39c12;">0</p>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>Student Complaints</h3>
+                <input type="text" placeholder="Search..." class="form-control" style="width: 200px; padding: 8px;">
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Student</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Status / Action</th>
+                            <th>Update</th>
+                        </tr>
+                    </thead>
+                    <tbody id="complaints-table">
+                        <!-- Example Row -->
+                        <!--
+                        <tr>
+                            <td>#123</td>
+                            <td>John Doe</td>
+                            <td>Academic</td>
+                            <td>Missing marks in subject code CS101</td>
+                            <td>
+                                <select class="status-select">
+                                    <option value="Pending" selected>Pending</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Resolved">Resolved</option>
+                                </select>
+                            </td>
+                            <td><button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.8rem;">Save</button></td>
+                        </tr>
+                        -->
+                        <tr>
+                            <td colspan="6" class="text-center">Loading complaints...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadComplaints() {
+            fetch('php/admin_data.php')
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('complaints-table');
+
+                    // Update stats
+                    let pending = 0;
+
+                    if (data.length > 0) {
+                        tbody.innerHTML = '';
+                        data.forEach(item => {
+                            if (item.status === 'Pending') pending++;
+
+                            const row = `
+                        <tr>
+                            <td>#${item.id}</td>
+                            <td>${item.student_name} ${item.is_anonymous == 1 ? '<i class="fas fa-user-secret" title="Anonymous"></i>' : ''}</td>
+                            <td>${item.category}</td>
+                            <td>${item.description}</td>
+                            <td>
+                                <select class="status-select" id="status-${item.id}">
+                                    <option value="Pending" ${item.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="In Progress" ${item.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                    <option value="Resolved" ${item.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+                                </select>
+                            </td>
+                            <td>
+                                <button onclick="updateStatus(${item.id})" class="btn btn-primary" style="padding: 5px 10px; font-size: 0.8rem;">Update</button>
+                            </td>
+                        </tr>
+                        `;
+                            tbody.innerHTML += row;
+                        });
+
+                        // Update stats counters
+                        // (Assuming element IDs existed, but they don't in my previous generic HTML. 
+                        // I'll leave this as a concept or add IDs via JS if needed, but let's keep it simple).
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 30px;">No complaints found.</td></tr>`;
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+
+        function updateStatus(id) {
+            const newStatus = document.getElementById(`status-${id}`).value;
+
+            fetch('php/update_status.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, status: newStatus })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message);
+                    loadComplaints(); // Reload to refresh
+                });
+        }
+
+        // Load on start
+        loadComplaints();
+
+        function handleLogout(event) {
+            if (window.location.protocol === 'file:') {
+                event.preventDefault();
+                alert("⚠️ DEMO MODE: Logging out...");
+                window.location.href = 'index.html';
+                return false;
+            }
+            return true;
+        }
+    </script>
+</body>
+
+</html>

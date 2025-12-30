@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Status - Grievance System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
+        <div class="logo"><i class="fas fa-university"></i> SGS</div>
+        <a href="dashboard.html" class="btn btn-outline" style="padding: 8px 20px;">Back to Dashboard</a>
+    </div>
+
+    <div class="container animate-fade-in" style="margin-top: 100px;">
+        <h2 class="text-center">Your Complaints Status</h2>
+
+        <div id="status-container">
+            <!-- Example Static Data (Will be replaced by AJAX) -->
+            <!-- 
+            <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3>Infrastructure Issue - Fan not working</h3>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">Submitted on: 2023-10-25</p>
+                    <p style="margin-top: 10px;"><strong>Admin Remark:</strong> Maintenance team assigned.</p>
+                </div>
+                <div class="text-center">
+                    <span class="status-badge status-In">In Progress</span>
+                </div>
+            </div>
+             -->
+            <div class="glass-card text-center">
+                <p>Loading your complaints...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fetch status from backend
+        fetch('php/status.php')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('status-container');
+                if (data.length > 0) {
+                    container.innerHTML = '';
+                    data.forEach(item => {
+                        // Determine status color
+                        let badgeClass = 'status-Pending';
+                        if (item.status === 'In Progress') badgeClass = 'status-In';
+                        if (item.status === 'Resolved') badgeClass = 'status-Resolved';
+
+                        const html = `
+                        <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3>${item.category}</h3>
+                                <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 5px;">${item.description}</p>
+                                <p style="font-size: 0.8rem; opacity: 0.6;">Submitted on: ${item.created_at}</p>
+                                ${item.admin_remark ? `<p style="margin-top: 10px; color: #f1c40f;"><strong>Admin:</strong> ${item.admin_remark}</p>` : ''}
+                            </div>
+                            <div class="text-center">
+                                <span class="status-badge ${badgeClass}">${item.status}</span>
+                            </div>
+                        </div>
+                       `;
+                        container.innerHTML += html;
+                    });
+                } else {
+                    container.innerHTML = '<div class="glass-card text-center"><p>No complaints found.</p></div>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('status-container').innerHTML = '<div class="glass-card text-center"><p>Error loading data. Are you logged in?</p></div>';
+            });
+    </script>
+</body>
+
+</html>

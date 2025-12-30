@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Complaint - Grievance System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
+        <div class="logo"><i class="fas fa-university"></i> SGS</div>
+        <a href="dashboard.html" class="btn btn-outline" style="padding: 8px 20px;">Back to Dashboard</a>
+    </div>
+
+    <div class="container animate-fade-in" style="display: flex; justify-content: center; margin-top: 80px;">
+        <div class="glass-card" style="width: 100%; max-width: 600px; padding: 40px;">
+            <h2><i class="fas fa-edit"></i> File a Complaint</h2>
+            <br>
+
+            <form action="php/complaint.php" method="POST" onsubmit="return handleComplaint(event)">
+
+                <div class="form-group">
+                    <label>Category (Smart Routing)</label>
+                    <select name="category" class="form-control"
+                        style="background: rgba(255,255,255,0.1); color: #fff;">
+                        <option value="Academic" style="color: #333;">Academic (Routing to HOD)</option>
+                        <option value="Infrastructure" style="color: #333;">Infrastructure (Routing to Maintenance)
+                        </option>
+                        <option value="Canteen" style="color: #333;">Canteen (Routing to Manager)</option>
+                        <option value="Library" style="color: #333;">Library (Routing to Librarian)</option>
+                        <option value="Other" style="color: #333;">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" rows="5" class="form-control"
+                        placeholder="Describe your issue in detail..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" name="is_anonymous" value="1"
+                            style="width: 20px; height: 20px; margin-right: 10px;">
+                        Submit Anonymously (Hide Identity)
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Complaint</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function handleComplaint(event) {
+            if (window.location.protocol === 'file:') {
+                event.preventDefault();
+                alert("⚠️ DEMO MODE: Complaint 'Submitted'! \nRedirecting to Dashboard...");
+                window.location.href = 'dashboard.html';
+                return false;
+            }
+            return true;
+        }
+    </script>
+</body>
+
+</html>

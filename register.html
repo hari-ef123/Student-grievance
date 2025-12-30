@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Grievance System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
+        <div class="logo"><i class="fas fa-university"></i> SGS</div>
+        <a href="index.html" class="btn btn-outline" style="padding: 8px 20px;">Home</a>
+    </div>
+
+    <div class="container animate-fade-in" style="display: flex; justify-content: center;">
+        <div class="glass-card" style="width: 100%; max-width: 500px; padding: 40px;">
+            <h2 class="text-center"><i class="fas fa-user-plus"></i> User Registration</h2>
+            <br>
+
+            <form action="php/register.php" method="POST" onsubmit="return validateForm()">
+                <div class="form-group text-center">
+                    <label style="margin-right: 15px;">
+                        <input type="radio" name="role" value="student" checked> Student
+                    </label>
+                    <label>
+                        <input type="radio" name="role" value="admin"> Admin
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="name" class="form-control" placeholder="John Doe" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" class="form-control" placeholder="student@college.edu" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" id="password" class="form-control"
+                        placeholder="Create a password" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="confirm_password" class="form-control" placeholder="Confirm password"
+                        required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
+            </form>
+
+            <p class="text-center mt-20">
+                Already registered? <a href="login.html" style="text-decoration: underline;">Login Here</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function validateForm(event) {
+            // Check password match
+            var pw = document.getElementById("password").value;
+            var cpw = document.getElementById("confirm_password").value;
+            if (pw !== cpw) {
+                alert("Passwords do not match!");
+                if (event) event.preventDefault();
+                return false;
+            }
+
+            // DEMO MODE CHECK: If running as file://, simulate success
+            if (window.location.protocol === 'file:') {
+                if (event) event.preventDefault(); // Stop form submission
+                const role = document.querySelector('input[name="role"]:checked').value;
+                alert(`⚠️ DEMO MODE: ${role.toUpperCase()} Registration Simulated!\n(In XAMPP, this would save to Database)`);
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Attach listener to form to capture event
+        document.querySelector('form').addEventListener('submit', validateForm);
+    </script>
+</body>
+
+</html>
