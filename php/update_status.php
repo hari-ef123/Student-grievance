@@ -2,35 +2,35 @@
 session_start();
 include 'db.php';
 
+header('Content-Type: application/json');
+
+// Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
-    die("Unauthorized");
+    http_response_code(403);
+    echo json_encode(["message" => "Unauthorized"]);
+    exit();
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Expecting JSON input for AJAX or Form
-    // For this simple plan, I'll support JSON input which is better for the 'Futuristic status update'
+// Get JSON input
+$data = json_decode(file_get_contents("php://input"), true);
 
-    $input = json_decode(file_get_contents('php://input'), true);
+if (isset($data['id']) && isset($data['status'])) {
+    $id = $data['id'];
+    $status = $data['status'];
 
-    if ($input) {
-        $id = $input['id'];
-        $status = $input['status'];
+    $sql = "UPDATE complaints SET status = ? WHERE id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("si", $status, $id);
 
-        $sql = "UPDATE complaints SET status = ? WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("si", $status, $id);
-
-        if ($stmt->execute()) {
-            echo json_encode(["message" => "Status updated successfully"]);
-        } else {
-            echo json_encode(["message" => "Error updating status"]);
-        }
-        $stmt->close();
+    if ($stmt->execute()) {
+        echo json_encode(["message" => "Status updated successfully!"]);
     } else {
-        // Fallback or Error
-        echo json_encode(["message" => "Invalid Input"]);
+        echo json_encode(["message" => "Error updating status."]);
     }
-
-    $conn->close();
+    $stmt->close();
+} else {
+    echo json_encode(["message" => "Invalid input."]);
 }
+
+$conn->close();
 ?>

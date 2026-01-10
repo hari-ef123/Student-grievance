@@ -12,7 +12,7 @@
 <body>
     <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
         <div class="logo"><i class="fas fa-university"></i> SGS</div>
-        <a href="dashboard.html" class="btn btn-outline" style="padding: 8px 20px;">Back to Dashboard</a>
+        <a href="php/dashboard.php" class="btn btn-outline" style="padding: 8px 20px;">Back to Dashboard</a>
     </div>
 
     <div class="container animate-fade-in" style="display: flex; justify-content: center; margin-top: 80px;">
@@ -20,7 +20,7 @@
             <h2><i class="fas fa-edit"></i> File a Complaint</h2>
             <br>
 
-            <form action="php/complaint.php" method="POST" onsubmit="return handleComplaint(event)">
+            <form action="php/submit_complaint.php" method="POST" onsubmit="return handleComplaint(event)">
 
                 <div class="form-group">
                     <label>Category (Smart Routing)</label>
@@ -54,12 +54,31 @@
         </div>
     </div>
 
+    <script src="js/mock_data.js"></script>
     <script>
         function handleComplaint(event) {
             if (window.location.protocol === 'file:') {
                 event.preventDefault();
-                alert("⚠️ DEMO MODE: Complaint 'Submitted'! \nRedirecting to Dashboard...");
-                window.location.href = 'dashboard.html';
+
+                // Collect Form Data
+                const form = document.querySelector('form');
+                const formData = new FormData(form);
+
+                const complaint = {
+                    student_name: "Mock Student", // Ideally fetched from session, hardcoded for demo
+                    category: formData.get('category'),
+                    description: formData.get('description'),
+                    is_anonymous: formData.get('is_anonymous') ? 1 : 0
+                };
+
+                // Save to Mock DB
+                if (typeof addComplaint !== 'undefined') {
+                    const id = addComplaint(complaint);
+                    alert(`✅ DEMO MODE: Complaint #${id} Submitted Successfully!\nIt is now saved in your browser storage.`);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert("Error: Mock data layer missing.");
+                }
                 return false;
             }
             return true;

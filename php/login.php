@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['user_id'] = $row['id'];
                 $_SESSION['user_name'] = $row['name'];
                 $_SESSION['role'] = 'student';
-                header("Location: ../dashboard.html");
+                header("Location: dashboard.php");
             } else {
                 echo "<script>alert('Invalid Password'); window.location.href='../login.html';</script>";
             }
@@ -43,7 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($password === $row['password']) {
                 $_SESSION['admin_id'] = $row['id'];
                 $_SESSION['role'] = 'admin';
-                header("Location: ../admin.html");
+                header("Location: admin.php");
             } else {
                 echo "<script>alert('Invalid Admin Password'); window.location.href='../login.html';</script>";
             }

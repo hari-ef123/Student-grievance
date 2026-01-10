@@ -115,22 +115,24 @@
         </div>
     </div>
 
+    <script src="js/mock_data.js"></script>
     <script>
         function loadComplaints() {
-            fetch('php/admin_data.php')
-                .then(res => res.json())
-                .then(data => {
-                    const tbody = document.getElementById('complaints-table');
+            // Helper to render
+            const render = (data) => {
+                const tbody = document.getElementById('complaints-table');
+                let pending = 0;
 
-                    // Update stats
-                    let pending = 0;
+                // Update Stats (naive count)
+                if (data) {
+                    pending = data.filter(i => i.status === 'Pending').length;
+                }
+                // Update DOM elements for stats if they existed (omitted for brevity as per original)
 
-                    if (data.length > 0) {
-                        tbody.innerHTML = '';
-                        data.forEach(item => {
-                            if (item.status === 'Pending') pending++;
-
-                            const row = `
+                if (data && data.length > 0) {
+                    tbody.innerHTML = '';
+                    data.forEach(item => {
+                        const row = `
                         <tr>
                             <td>#${item.id}</td>
                             <td>${item.student_name} ${item.is_anonymous == 1 ? '<i class="fas fa-user-secret" title="Anonymous"></i>' : ''}</td>
@@ -148,21 +150,47 @@
                             </td>
                         </tr>
                         `;
-                            tbody.innerHTML += row;
-                        });
+                        tbody.innerHTML += row;
+                    });
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 30px;">No complaints found.</td></tr>`;
+                }
+            };
 
-                        // Update stats counters
-                        // (Assuming element IDs existed, but they don't in my previous generic HTML. 
-                        // I'll leave this as a concept or add IDs via JS if needed, but let's keep it simple).
-                    } else {
-                        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 30px;">No complaints found.</td></tr>`;
-                    }
-                })
-                .catch(err => console.error(err));
+            if (typeof isDemoMode !== 'undefined' && isDemoMode()) {
+                console.log("Loading Admin Data from Mock...");
+
+                const dbData = getComplaints(); // Dynamic Fetch
+
+                // Calculate stats for admin
+                document.querySelector('.grid-container .glass-card:nth-child(1) p').innerText = dbData.length;
+                document.querySelector('.grid-container .glass-card:nth-child(2) p').innerText = dbData.filter(c => c.status === 'Pending').length;
+                render(dbData);
+            } else {
+                fetch('php/admin_data.php')
+                    .then(res => res.json())
+                    .then(data => render(data))
+                    .catch(err => console.error(err));
+            }
         }
 
         function updateStatus(id) {
             const newStatus = document.getElementById(`status-${id}`).value;
+
+            if (typeof isDemoMode !== 'undefined' && isDemoMode()) {
+                let remark = "";
+                if (newStatus === 'Resolved' || newStatus === 'In Progress') {
+                    remark = prompt("Enter Admin Remark/Solution (Optional):", "Action taken.");
+                }
+
+                if (updateComplaintStatus(id, newStatus, remark)) {
+                    alert(`✅ DEMO MODE: Status updated to '${newStatus}' for Complaint #${id}.`);
+                    loadComplaints(); // Refresh table
+                } else {
+                    alert("Error updating mock DB.");
+                }
+                return;
+            }
 
             fetch('php/update_status.php', {
                 method: 'POST',

@@ -64,12 +64,32 @@
         </div>
     </div>
 
+    <script src="js/mock_data.js"></script>
     <script>
         // Simple script to mock data loading if PHP isn't ready
         setTimeout(() => {
-            // In real integration, this will be an AJAX call to php/status.php
-            document.getElementById('recent-activity-list').innerHTML = '<p>No recent activity found. Start by filing a complaint!</p>';
-        }, 1000);
+            if (typeof isDemoMode !== 'undefined' && isDemoMode()) {
+                const stats = getStats(); // Dynamic Fetch
+                document.getElementById('total-count').innerText = stats.total;
+                document.getElementById('pending-count').innerText = stats.pending;
+                document.getElementById('resolved-count').innerText = stats.resolved;
+
+                const activityList = document.getElementById('recent-activity-list');
+                activityList.innerHTML = '';
+                const dbData = getComplaints(); // Dynamic Fetch
+                dbData.slice(0, 3).forEach(item => {
+                    activityList.innerHTML += `
+                        <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0;">
+                            <strong>${item.category}</strong>: ${item.description.substring(0, 50)}...
+                            <span class="status-badge status-${item.status}" style="font-size: 0.7rem; margin-left:10px;">${item.status}</span>
+                        </div>
+                     `;
+                });
+            } else {
+                // In real integration, this will be an AJAX call to php/status.php
+                document.getElementById('recent-activity-list').innerHTML = '<p>No recent activity found. Start by filing a complaint!</p>';
+            }
+        }, 500);
 
         function handleLogout(event) {
             if (window.location.protocol === 'file:') {
