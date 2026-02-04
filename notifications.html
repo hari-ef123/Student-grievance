@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - Grievance System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .notif-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 15px;
+            transition: 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notif-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.02);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .notif-card.urgent {
+            border-left: 5px solid #ff6b6b;
+            background: rgba(255, 107, 107, 0.05);
+        }
+
+        .notif-card.urgent:hover {
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .notif-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .icon-new {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+        }
+
+        .icon-urgent {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        .notif-content {
+            flex: 1;
+        }
+
+        .notif-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .notif-desc {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .notif-meta {
+            font-size: 0.75rem;
+            opacity: 0.5;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 30px 0 20px;
+            color: white;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .section-header i {
+            font-size: 1.1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            opacity: 0.6;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            margin-bottom: 20px;
+            font-weight: 600;
+            opacity: 0.8;
+            transition: 0.3s;
+        }
+
+        .back-btn:hover {
+            opacity: 1;
+            transform: translateX(-5px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container animate-fade-in">
+        <a href="admin.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+
+        <div class="glass-card">
+            <h1><i class="fas fa-bell"></i> Notifications Center</h1>
+            <p style="opacity: 0.7;">Stay updated with student grievances and urgent alerts.</p>
+        </div>
+
+        <div id="urgent-section">
+            <div class="section-header" style="color: #ff6b6b;"><i class="fas fa-clock"></i> Urgent Attention (Overdue
+                3+ Days)</div>
+            <div id="urgent-list"></div>
+        </div>
+
+        <div id="new-section">
+            <div class="section-header" style="color: #667eea;"><i class="fas fa-inbox"></i> New Grievances</div>
+            <div id="new-list"></div>
+        </div>
+
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
+            <h3>You're all caught up!</h3>
+            <p>No new or overdue notifications at this time.</p>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const role = localStorage.getItem('role');
+
+        if (!token || role !== 'admin') {
+            window.location.href = 'login.html';
+        }
+
+        let allComplaints = [];
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/api/admin/complaints', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    allComplaints = await response.json();
+                    renderNotifications();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderNotifications() {
+            const now = new Date();
+            const seenNotifs = JSON.parse(localStorage.getItem('seen_notifs') || '[]');
+
+            // Urgent: Pending and > 3 days old
+            const urgentComplaints = allComplaints.filter(c =>
+                c.status === 'Pending' && (now - new Date(c.created_at)) > (3 * 24 * 60 * 60 * 1000)
+            );
+
+            // New: Pending and NOT in seenNotifs
+            const newComplaints = allComplaints.filter(c =>
+                c.status === 'Pending' && !seenNotifs.includes(c.id) && !urgentComplaints.find(uc => uc.id === c.id)
+            );
+
+            const urgentList = document.getElementById('urgent-list');
+            const newList = document.getElementById('new-list');
+
+            urgentList.innerHTML = '';
+            newList.innerHTML = '';
+
+            if (urgentComplaints.length === 0) {
+                document.getElementById('urgent-section').style.display = 'none';
+            } else {
+                document.getElementById('urgent-section').style.display = 'block';
+                urgentComplaints.forEach(c => {
+                    urgentList.innerHTML += createNotifCard(c, true);
+                });
+            }
+
+            if (newComplaints.length === 0) {
+                document.getElementById('new-section').style.display = 'none';
+            } else {
+                document.getElementById('new-section').style.display = 'block';
+                newComplaints.forEach(c => {
+                    newList.innerHTML += createNotifCard(c, false);
+                });
+            }
+
+            if (urgentComplaints.length === 0 && newComplaints.length === 0) {
+                document.getElementById('empty-state').style.display = 'block';
+            } else {
+                document.getElementById('empty-state').style.display = 'none';
+            }
+        }
+
+        function createNotifCard(c, isUrgent) {
+            const dateObj = new Date(c.created_at);
+            const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            return `
+                <div class="notif-card ${isUrgent ? 'urgent' : ''}" onclick="goToComplaint('${c.id}')">
+                    <div class="notif-icon ${isUrgent ? 'icon-urgent' : 'icon-new'}">
+                        <i class="fas ${isUrgent ? 'fa-exclamation-triangle' : 'fa-plus'}"></i>
+                    </div>
+                    <div class="notif-content">
+                        <div class="notif-title">${c.category} ${isUrgent ? '<small>(Overdue)</small>' : ''}</div>
+                        <div class="notif-desc">${c.description}</div>
+                        <div class="notif-meta">
+                            <span><i class="far fa-user"></i> ${c.is_anonymous ? 'Anonymous' : (c.student_name || 'Student')}</span>
+                            <span style="margin-left: 15px;"><i class="far fa-clock"></i> ${dateStr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function goToComplaint(id) {
+            // Mark as seen
+            const seenNotifs = JSON.parse(localStorage.getItem('seen_notifs') || '[]');
+            if (!seenNotifs.includes(id)) {
+                seenNotifs.push(id);
+                localStorage.setItem('seen_notifs', JSON.stringify(seenNotifs));
+            }
+            // Redirect with highlight param
+            window.location.href = `admin.html?highlight=${id}`;
+        }
+
+        loadNotifications();
+    </script>
+</body>
+
+</html>

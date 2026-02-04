@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+motor
+beanie
+passlib[argon2]
+python-multipart
+python-jose

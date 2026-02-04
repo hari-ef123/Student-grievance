@@ -38,29 +38,52 @@
         </div>
     </div>
 
-    <script src="js/mock_data.js"></script>
     <script>
-        // Use a unified render function
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/api/complaints/my', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401) {
+                    alert('Session expired');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const data = await response.json();
+                renderComplaints(data);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('status-container').innerHTML =
+                    '<div class="glass-card text-center"><p style="color:#ff6b6b">Error loading data. Ensure backend is running.</p></div>';
+            }
+        });
+
         function renderComplaints(data) {
             const container = document.getElementById('status-container');
             if (data.length > 0) {
                 container.innerHTML = '';
                 data.forEach(item => {
-                    // Determine status color
-                    let badgeClass = 'status-Pending';
-                    if (item.status === 'In Progress') badgeClass = 'status-In';
-                    if (item.status === 'Resolved') badgeClass = 'status-Resolved';
+                    const statusClass = `status-${item.status.toLowerCase().replace(' ', '-')}`;
+                    const date = new Date(item.created_at).toLocaleDateString();
 
                     const html = `
                          <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center;">
                              <div>
                                  <h3>${item.category}</h3>
                                  <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 5px;">${item.description}</p>
-                                 <p style="font-size: 0.8rem; opacity: 0.6;">Submitted on: ${item.created_at}</p>
+                                 <p style="font-size: 0.8rem; opacity: 0.6;">Submitted on: ${date}</p>
+                                 ${item.attachment ? `<div style="margin-top: 5px;"><a href="http://127.0.0.1:8000/${item.attachment}" target="_blank" style="color: #667eea; font-size: 0.8rem;"><i class="fas fa-paperclip"></i> View My Attachment</a></div>` : ''}
                                  ${item.admin_remark ? `<p style="margin-top: 10px; color: #f1c40f;"><strong>Admin:</strong> ${item.admin_remark}</p>` : ''}
                              </div>
                              <div class="text-center">
-                                 <span class="status-badge ${badgeClass}">${item.status}</span>
+                                 <span class="status-badge ${statusClass}">${item.status}</span>
                              </div>
                          </div>
                     `;
@@ -69,22 +92,6 @@
             } else {
                 container.innerHTML = '<div class="glass-card text-center"><p>No complaints found.</p></div>';
             }
-        }
-
-        // Check Demo Mode
-        if (typeof isDemoMode !== 'undefined' && isDemoMode()) {
-            console.log("Rendering status from mock...");
-            const dbData = getComplaints(); // Dynamic Fetch
-            renderComplaints(dbData);
-        } else {
-            // Fetch from backend
-            fetch('php/status.php')
-                .then(response => response.json())
-                .then(data => renderComplaints(data))
-                .catch(err => {
-                    console.error(err);
-                    document.getElementById('status-container').innerHTML = '<div class="glass-card text-center"><p>Error loading data. Are you logged in?</p></div>';
-                });
         }
     </script>
 </body>

@@ -12,7 +12,7 @@
 <body>
     <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
         <div class="logo"><i class="fas fa-university"></i> SGS</div>
-        <a href="php/dashboard.php" class="btn btn-outline" style="padding: 8px 20px;">Back to Dashboard</a>
+        <a href="dashboard.html" class="btn btn-outline" style="padding: 8px 20px;">Back to Dashboard</a>
     </div>
 
     <div class="container animate-fade-in" style="display: flex; justify-content: center; margin-top: 80px;">
@@ -20,7 +20,13 @@
             <h2><i class="fas fa-edit"></i> File a Complaint</h2>
             <br>
 
-            <form action="php/submit_complaint.php" method="POST" onsubmit="return handleComplaint(event)">
+            <form>
+
+                <div class="form-group">
+                    <label>Incident Date</label>
+                    <input type="date" name="incident_date" id="incident_date" class="form-control"
+                        style="background: rgba(255,255,255,0.1); color: #fff;" required>
+                </div>
 
                 <div class="form-group">
                     <label>Category (Smart Routing)</label>
@@ -31,6 +37,8 @@
                         </option>
                         <option value="Canteen" style="color: #333;">Canteen (Routing to Manager)</option>
                         <option value="Library" style="color: #333;">Library (Routing to Librarian)</option>
+                        <option value="Ragging" style="color: #333;">Ragging (Routing to Anti-Ragging Committee)
+                        </option>
                         <option value="Other" style="color: #333;">Other</option>
                     </select>
                 </div>
@@ -39,6 +47,13 @@
                     <label>Description</label>
                     <textarea name="description" rows="5" class="form-control"
                         placeholder="Describe your issue in detail..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-paperclip"></i> Incident Evidence (Optional)</label>
+                    <input type="file" name="attachment" id="attachment" class="form-control"
+                        style="background: rgba(255,255,255,0.1); color: #fff;">
+                    <p style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px;">Upload images, PDFs, or documents.</p>
                 </div>
 
                 <div class="form-group">
@@ -54,35 +69,70 @@
         </div>
     </div>
 
-    <script src="js/mock_data.js"></script>
     <script>
-        function handleComplaint(event) {
-            if (window.location.protocol === 'file:') {
-                event.preventDefault();
+        // Check auth
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+        }
 
-                // Collect Form Data
-                const form = document.querySelector('form');
-                const formData = new FormData(form);
+        // Restrict date picker to past/present only
+        const dateInput = document.getElementById('incident_date');
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.max = today;
 
-                const complaint = {
-                    student_name: "Mock Student", // Ideally fetched from session, hardcoded for demo
-                    category: formData.get('category'),
-                    description: formData.get('description'),
-                    is_anonymous: formData.get('is_anonymous') ? 1 : 0
-                };
+        document.querySelector('form').addEventListener('submit', async function (event) {
+            event.preventDefault();
 
-                // Save to Mock DB
-                if (typeof addComplaint !== 'undefined') {
-                    const id = addComplaint(complaint);
-                    alert(`✅ DEMO MODE: Complaint #${id} Submitted Successfully!\nIt is now saved in your browser storage.`);
+            const formData = new FormData(this);
+            const incidentDateString = formData.get('incident_date');
+
+            // Final validation for future date
+            if (new Date(incidentDateString) > new Date()) {
+                alert('Incident Date cannot be in the future. Please select a correct date.');
+                return;
+            }
+
+            // Ensure is_anonymous is sent in a way FastAPI Form bool can easily parse (true or false)
+            formData.set('is_anonymous', this.querySelector('[name="is_anonymous"]').checked ? 'true' : 'false');
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.disabled = true;
+
+            try {
+                // Using relative URL to avoid CORS/IP mismatch issues
+                const response = await fetch('/api/complaints', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert('Complaint Submitted Successfully!');
                     window.location.href = 'dashboard.html';
                 } else {
-                    alert("Error: Mock data layer missing.");
+                    const text = await response.text();
+                    try {
+                        const error = JSON.parse(text);
+                        alert('Submission Failed: ' + (error.detail || JSON.stringify(error)));
+                    } catch (e) {
+                        // Not JSON - probably server error page
+                        console.error('Server returned non-JSON:', text);
+                        alert(`Server Error (${response.status}): The server returned an unexpected response. Please check backend logs.`);
+                    }
                 }
-                return false;
+            } catch (err) {
+                console.error('Network/Fetch Error:', err);
+                alert('Connection Error: Could not reach the server. Ensure Backend is running.');
+            } finally {
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
             }
-            return true;
-        }
+        });
     </script>
 </body>
 

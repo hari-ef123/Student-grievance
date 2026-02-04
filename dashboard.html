@@ -14,7 +14,7 @@
         <div class="logo"><i class="fas fa-user-graduate"></i> Student Dashboard</div>
         <div>
             <span style="margin-right: 15px;">Welcome, User!</span>
-            <a href="php/logout.php" onclick="return handleLogout(event)" class="btn btn-outline"
+            <a href="#" onclick="return handleLogout(event)" class="btn btn-outline"
                 style="padding: 5px 15px; font-size: 0.9rem;">Logout</a>
         </div>
     </div>
@@ -64,41 +64,86 @@
         </div>
     </div>
 
-    <script src="js/mock_data.js"></script>
     <script>
-        // Simple script to mock data loading if PHP isn't ready
-        setTimeout(() => {
-            if (typeof isDemoMode !== 'undefined' && isDemoMode()) {
-                const stats = getStats(); // Dynamic Fetch
-                document.getElementById('total-count').innerText = stats.total;
-                document.getElementById('pending-count').innerText = stats.pending;
-                document.getElementById('resolved-count').innerText = stats.resolved;
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('token');
+            const userName = localStorage.getItem('user_name');
 
-                const activityList = document.getElementById('recent-activity-list');
-                activityList.innerHTML = '';
-                const dbData = getComplaints(); // Dynamic Fetch
-                dbData.slice(0, 3).forEach(item => {
-                    activityList.innerHTML += `
-                        <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0;">
-                            <strong>${item.category}</strong>: ${item.description.substring(0, 50)}...
-                            <span class="status-badge status-${item.status}" style="font-size: 0.7rem; margin-left:10px;">${item.status}</span>
-                        </div>
-                     `;
-                });
-            } else {
-                // In real integration, this will be an AJAX call to php/status.php
-                document.getElementById('recent-activity-list').innerHTML = '<p>No recent activity found. Start by filing a complaint!</p>';
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
             }
-        }, 500);
+
+            // Update user name
+            if (userName) {
+                document.querySelector('.navbar span').textContent = `Welcome, ${userName}!`;
+            }
+
+            try {
+                const response = await fetch('/api/complaints/my', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    alert('Session expired. Please login again.');
+                    logout();
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Failed to fetch data');
+
+                const complaints = await response.json();
+                updateDashboard(complaints);
+
+            } catch (err) {
+                console.error('Error fetching dashboard data:', err);
+                document.getElementById('recent-activity-list').innerHTML = '<p style="color: #ff6b6b">Failed to load data. Ensure backend is running.</p>';
+            }
+        });
+
+        function updateDashboard(complaints) {
+            // Calculate stats
+            const total = complaints.length;
+            const pending = complaints.filter(c => c.status === 'Pending' || c.status === 'In Progress').length;
+            const resolved = complaints.filter(c => c.status === 'Resolved').length;
+
+            document.getElementById('total-count').innerText = total;
+            document.getElementById('pending-count').innerText = pending;
+            document.getElementById('resolved-count').innerText = resolved;
+
+            // Recent Activity 
+            const activityList = document.getElementById('recent-activity-list');
+            activityList.innerHTML = '';
+
+            if (complaints.length === 0) {
+                activityList.innerHTML = '<p style="opacity: 0.7;">No complaints found. Start by filing one!</p>';
+                return;
+            }
+
+            // Show last 3
+            complaints.slice().reverse().slice(0, 3).forEach(item => {
+                activityList.innerHTML += `
+                    <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px 0;">
+                        <strong>${item.category}</strong>: ${item.description.substring(0, 50)}${item.description.length > 50 ? '...' : ''}
+                        <span class="status-badge status-${item.status.toLowerCase().replace(' ', '-')}" style="font-size: 0.7rem; margin-left:10px;">${item.status}</span>
+                        <div style="font-size: 0.8rem; opacity: 0.6; margin-top: 5px;">${new Date(item.created_at).toLocaleDateString()}</div>
+                    </div>
+                `;
+            });
+        }
 
         function handleLogout(event) {
-            if (window.location.protocol === 'file:') {
-                event.preventDefault();
-                alert("⚠️ DEMO MODE: Logging out...");
-                window.location.href = 'index.html';
-                return false;
-            }
-            return true;
+            event.preventDefault();
+            logout();
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            localStorage.removeItem('user_name');
+            window.location.href = 'index.html';
         }
     </script>
 </body>

@@ -42,15 +42,175 @@
             background: rgba(255, 255, 255, 0.8);
             color: #333;
         }
+
+        /* Pagination Styles */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .pagination-btn {
+            padding: 8px 15px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .page-num {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+
+        .page-num.active {
+            background: #667eea;
+            font-weight: bold;
+        }
+
+        /* Settings Modal Styles */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .settings-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .settings-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            color: white;
+        }
+
+        .settings-card h2 {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Notification Styles */
+        .notification-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-right: 15px;
+        }
+
+        .notification-bell {
+            font-size: 1.2rem;
+            color: white;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .notification-bell:hover {
+            transform: scale(1.1);
+        }
+
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ff6b6b;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 50%;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+            display: none;
+            /* Hidden by default */
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .category-urgent {
+            color: #b33939 !important;
+            /* Dark Red */
+            font-weight: 800 !important;
+            text-shadow: 0 0 8px rgba(179, 57, 57, 0.4);
+        }
+
+        .ragging-row {
+            background: rgba(179, 57, 57, 0.2) !important;
+        }
     </style>
 </head>
 
 <body>
-    <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
+    <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px; z-index: 2000;">
         <div class="logo"><i class="fas fa-user-shield"></i> Admin Panel</div>
-        <div>
+        <div style="display: flex; align-items: center;">
+            <div class="notification-wrapper">
+                <a href="notifications.html" class="notification-bell">
+                    <i class="fas fa-bell"></i>
+                    <span id="notif-badge" class="badge">0</span>
+                </a>
+            </div>
             <span style="margin-right: 15px;">Administrator</span>
-            <a href="php/logout.php" onclick="return handleLogout(event)" class="btn btn-outline"
+            <button onclick="toggleSettings()" class="btn btn-outline"
+                style="padding: 5px 15px; font-size: 0.9rem; margin-right: 10px;">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+            <a href="#" onclick="return handleLogout(event)" class="btn btn-outline"
                 style="padding: 5px 15px; font-size: 0.9rem;">Logout</a>
         </div>
     </div>
@@ -73,19 +233,26 @@
         <div class="glass-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h3>Student Complaints</h3>
-                <input type="text" placeholder="Search..." class="form-control" style="width: 200px; padding: 8px;">
+                <div style="display: flex; gap: 10px;">
+                    <button id="clearFilterBtn" onclick="clearFilter()" class="btn btn-outline"
+                        style="display: none; padding: 5px 15px; font-size: 0.8rem; border-color: #ff6b6b; color: #ff6b6b;">Clear
+                        Filter</button>
+                    <input type="text" id="searchInput" placeholder="Search Category..." class="form-control"
+                        style="width: 250px; padding: 8px;">
+                </div>
             </div>
 
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>No.</th>
                             <th>Student</th>
                             <th>Category</th>
                             <th>Description</th>
+                            <th>Date & Time</th>
                             <th>Status / Action</th>
-                            <th>Update</th>
+                            <th style="min-width: 100px;">Update</th>
                         </tr>
                     </thead>
                     <tbody id="complaints-table">
@@ -107,116 +274,356 @@
                         </tr>
                         -->
                         <tr>
-                            <td colspan="6" class="text-center">Loading complaints...</td>
+                            <td colspan="7" class="text-center">Loading complaints...</td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <!-- Pagination Controls -->
+            <div id="pagination" class="pagination-container"></div>
+        </div>
+    </div>
+
+    <!-- Admin Settings Modal -->
+    <div id="settingsOverlay" class="settings-overlay">
+        <div class="settings-card">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <h2><i class="fas fa-cog"></i> Admin Settings</h2>
+                <button onclick="toggleSettings()" class="btn btn-outline" style="padding: 5px 10px;">&times;</button>
+            </div>
+
+            <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                <h3>Register New Admin</h3>
+                <p style="font-size: 0.9rem; opacity: 0.7; margin: 10px 0 20px;">Create another administrator account
+                    for the system.</p>
+
+                <form id="newAdminForm" onsubmit="registerNewAdmin(event)">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="name" class="form-control" required placeholder="Enter name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" class="form-control" required placeholder="Enter email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" id="admin_password" class="form-control" required
+                            placeholder="Enter password">
+                    </div>
+                    <button type="submit" id="adminSubmitBtn" class="btn btn-primary"
+                        style="width: 100%; margin-top: 10px;">Register New Admin</button>
+                </form>
             </div>
         </div>
     </div>
 
     <script src="js/mock_data.js"></script>
     <script>
-        function loadComplaints() {
-            // Helper to render
-            const render = (data) => {
-                const tbody = document.getElementById('complaints-table');
-                let pending = 0;
+        const token = localStorage.getItem('token');
+        const role = localStorage.getItem('role');
 
-                // Update Stats (naive count)
-                if (data) {
-                    pending = data.filter(i => i.status === 'Pending').length;
+        if (!token || role !== 'admin') {
+            window.location.href = 'login.html';
+        }
+
+        let allComplaints = [];
+        let filteredComplaints = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
+        document.addEventListener('DOMContentLoaded', loadComplaints);
+
+        async function loadComplaints() {
+            try {
+                const response = await fetch('/api/admin/complaints', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    logout();
+                    return;
                 }
-                // Update DOM elements for stats if they existed (omitted for brevity as per original)
 
-                if (data && data.length > 0) {
-                    tbody.innerHTML = '';
-                    data.forEach(item => {
-                        const row = `
-                        <tr>
-                            <td>#${item.id}</td>
-                            <td>${item.student_name} ${item.is_anonymous == 1 ? '<i class="fas fa-user-secret" title="Anonymous"></i>' : ''}</td>
-                            <td>${item.category}</td>
-                            <td>${item.description}</td>
-                            <td>
-                                <select class="status-select" id="status-${item.id}">
-                                    <option value="Pending" ${item.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                                    <option value="In Progress" ${item.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
-                                    <option value="Resolved" ${item.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
-                                </select>
-                            </td>
-                            <td>
-                                <button onclick="updateStatus(${item.id})" class="btn btn-primary" style="padding: 5px 10px; font-size: 0.8rem;">Update</button>
-                            </td>
-                        </tr>
-                        `;
-                        tbody.innerHTML += row;
-                    });
+                allComplaints = await response.json();
+
+                // Sort by date (Latest First)
+                allComplaints.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                // Check for highlight parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const highlightId = urlParams.get('highlight');
+                if (highlightId) {
+                    filteredComplaints = allComplaints.filter(c => c.id === highlightId);
+                    // Add a "Show All" toggle/info if filtered
+                    if (filteredComplaints.length > 0) {
+                        document.getElementById('searchInput').placeholder = "Showing Highlighted Result...";
+                        document.getElementById('clearFilterBtn').style.display = 'block';
+                    }
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="padding: 30px;">No complaints found.</td></tr>`;
+                    filteredComplaints = [...allComplaints];
                 }
-            };
 
-            if (typeof isDemoMode !== 'undefined' && isDemoMode()) {
-                console.log("Loading Admin Data from Mock...");
-
-                const dbData = getComplaints(); // Dynamic Fetch
-
-                // Calculate stats for admin
-                document.querySelector('.grid-container .glass-card:nth-child(1) p').innerText = dbData.length;
-                document.querySelector('.grid-container .glass-card:nth-child(2) p').innerText = dbData.filter(c => c.status === 'Pending').length;
-                render(dbData);
-            } else {
-                fetch('php/admin_data.php')
-                    .then(res => res.json())
-                    .then(data => render(data))
-                    .catch(err => console.error(err));
+                currentPage = 1;
+                renderTable();
+                updateStats(allComplaints);
+                updateNotifications();
+            } catch (err) {
+                console.error('Error:', err);
+                document.getElementById('complaints-table').innerHTML =
+                    `<tr><td colspan="7" class="text-center" style="color: #ff6b6b">Failed to load data. Ensure backend is running.</td></tr>`;
             }
         }
 
-        function updateStatus(id) {
-            const newStatus = document.getElementById(`status-${id}`).value;
+        // Search Functionality
+        document.getElementById('searchInput').addEventListener('keyup', function () {
+            const filter = this.value.toLowerCase();
+            filteredComplaints = allComplaints.filter(item =>
+                item.category.toLowerCase().includes(filter) ||
+                (item.student_name && item.student_name.toLowerCase().includes(filter))
+            );
+            currentPage = 1;
+            renderTable();
+        });
 
-            if (typeof isDemoMode !== 'undefined' && isDemoMode()) {
-                let remark = "";
-                if (newStatus === 'Resolved' || newStatus === 'In Progress') {
-                    remark = prompt("Enter Admin Remark/Solution (Optional):", "Action taken.");
-                }
+        function clearFilter() {
+            window.location.href = 'admin.html';
+        }
 
-                if (updateComplaintStatus(id, newStatus, remark)) {
-                    alert(`✅ DEMO MODE: Status updated to '${newStatus}' for Complaint #${id}.`);
-                    loadComplaints(); // Refresh table
-                } else {
-                    alert("Error updating mock DB.");
-                }
+        function renderTable() {
+            const tbody = document.getElementById('complaints-table');
+            const paginationDiv = document.getElementById('pagination');
+            tbody.innerHTML = '';
+
+            if (filteredComplaints.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding: 30px;">No complaints found.</td></tr>`;
+                paginationDiv.innerHTML = '';
                 return;
             }
 
-            fetch('php/update_status.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id, status: newStatus })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    alert(data.message);
-                    loadComplaints(); // Reload to refresh
-                });
+            // Pagination Slicing
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageItems = filteredComplaints.slice(startIndex, endIndex);
+
+            pageItems.forEach((item, index) => {
+                const rowNumber = startIndex + index + 1;
+                const studentDisplay = item.is_anonymous
+                    ? '<i class="fas fa-user-secret" style="color: #f39c12;"></i> Anonymous'
+                    : (item.student_name || 'Unknown User');
+
+                // Format Dates (Force UTC to Local conversion by appending 'Z' if missing)
+                const createdDate = new Date(item.created_at.includes('T') && !item.created_at.includes('Z') ? item.created_at + 'Z' : item.created_at);
+                const isEmergency = item.status === 'Pending' && (new Date() - createdDate) > (3 * 24 * 60 * 60 * 1000);
+
+                const dateString = createdDate.toLocaleDateString();
+                const timeString = createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                const incidentMarkup = item.incident_date && item.incident_date !== "null"
+                    ? `<div>Inc: ${new Date(item.incident_date.includes('T') && !item.incident_date.includes('Z') ? item.incident_date + 'Z' : item.incident_date).toLocaleDateString()}</div>`
+                    : '';
+
+                const row = `
+                <tr class="${isEmergency ? 'emergency-row' : ''} ${item.category === 'Ragging' ? 'ragging-row' : ''}">
+                    <td>${rowNumber} ${isEmergency ? '<span class="emergency-blink" title="Emergency: Over 3 days pending">🚨</span>' : ''}</td>
+                    <td>${studentDisplay}</td>
+                    <td class="${item.category === 'Ragging' ? 'category-urgent' : ''}">${item.category}</td>
+                    <td style="max-width: 300px; font-size: 0.9rem;">
+                        ${item.description}
+                        ${item.attachment ? `<div style="margin-top: 8px;"><a href="javascript:void(0)" onclick="openPreview('/${item.attachment}')" style="color: #000; font-weight: 600; font-size: 0.8rem; cursor: pointer;"><i class="fas fa-paperclip"></i> View Evidence</a></div>` : ''}
+                    </td>
+                    <td style="font-size: 0.85rem;">
+                        <div style="font-weight: 500;">Sub: ${dateString} ${timeString}</div>
+                        ${incidentMarkup}
+                    </td>
+                    <td>
+                        <select class="status-select" id="status-${item.id}">
+                            <option value="Pending" ${item.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                            <option value="In Progress" ${item.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="Resolved" ${item.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button onclick="updateStatus('${item.id}')" class="btn btn-primary" style="padding: 5px 15px; font-size: 0.8rem; white-space: nowrap;">Update</button>
+                    </td>
+                </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            renderPagination();
+            updateNotifications();
         }
 
-        // Load on start
-        loadComplaints();
+        function updateNotifications() {
+            const now = new Date();
+            const seenNotifs = JSON.parse(localStorage.getItem('seen_notifs') || '[]');
+
+            const emergencyComplaints = allComplaints.filter(c =>
+                c.status === 'Pending' && (now - new Date(c.created_at)) > (3 * 24 * 60 * 60 * 1000)
+            );
+
+            // New: Pending and NOT in seenNotifs
+            const newComplaints = allComplaints.filter(c =>
+                c.status === 'Pending' && !seenNotifs.includes(c.id) && !emergencyComplaints.find(e => e.id === c.id)
+            );
+
+            const badge = document.getElementById('notif-badge');
+            const totalNotif = emergencyComplaints.length + newComplaints.length;
+
+            if (totalNotif > 0) {
+                badge.innerText = totalNotif;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredComplaints.length / itemsPerPage);
+            const paginationDiv = document.getElementById('pagination');
+
+            if (totalPages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+
+            let html = `
+                <button class="pagination-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i> Prev
+                </button>
+                <div class="pagination-info">Page ${currentPage} of ${totalPages}</div>
+                <button class="pagination-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
+            paginationDiv.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTable();
+            window.scrollTo({ top: document.querySelector('.table-container').offsetTop - 20, behavior: 'smooth' });
+        }
+
+        function updateStats(data) {
+            const total = data.length;
+            const pending = data.filter(c => c.status === 'Pending' || c.status === 'Open').length;
+
+            document.querySelector('.grid-container .glass-card:nth-child(1) p').innerText = total;
+            document.querySelector('.grid-container .glass-card:nth-child(2) p').innerText = pending;
+        }
+
+        async function updateStatus(id) {
+            const newStatus = document.getElementById(`status-${id}`).value;
+            let remark = null;
+
+            if (newStatus === 'Resolved' || newStatus === 'In Progress') {
+                remark = prompt("Enter Admin Remark/Solution (Optional):", "Action taken.");
+            }
+
+            try {
+                const response = await fetch(`/api/admin/complaints/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status: newStatus, admin_remark: remark })
+                });
+
+                if (response.ok) {
+                    alert('Status updated successfully!');
+                    loadComplaints();
+                } else {
+                    alert('Failed to update status.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error connecting to backend.');
+            }
+        }
 
         function handleLogout(event) {
-            if (window.location.protocol === 'file:') {
-                event.preventDefault();
-                alert("⚠️ DEMO MODE: Logging out...");
-                window.location.href = 'index.html';
-                return false;
+            event.preventDefault();
+            logout();
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        // --- Settings Functions ---
+        function toggleSettings() {
+            document.getElementById('settingsOverlay').classList.toggle('active');
+        }
+
+        async function registerNewAdmin(event) {
+            event.preventDefault();
+            const form = event.target;
+            const btn = document.getElementById('adminSubmitBtn');
+            const originalText = btn.innerText;
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            data.role = 'admin'; // Force role to admin
+
+            btn.disabled = true;
+            btn.innerText = 'Registering...';
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('New Admin Registered Successfully!');
+                    form.reset();
+                    toggleSettings();
+                } else {
+                    const error = await response.json();
+                    alert('Registration Failed: ' + (error.detail || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection error. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
             }
-            return true;
+        }
+
+        // --- Image Preview Functions ---
+        function openPreview(url) {
+            const modal = document.getElementById('previewModal');
+            const img = document.getElementById('previewImg');
+            img.src = url;
+            modal.classList.add('active');
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').classList.remove('active');
+        }
+
+        // Close modal on click outside
+        window.onclick = function (event) {
+            const modal = document.getElementById('previewModal');
+            if (event.target == modal) {
+                closePreview();
+            }
         }
     </script>
+
+    <!-- Image Preview Modal -->
+    <div id="previewModal" class="preview-modal">
+        <div class="preview-container">
+            <span class="preview-close" onclick="closePreview()">&times;</span>
+            <img id="previewImg" src="" alt="Evidence Preview">
+        </div>
+    </div>
 </body>
 
 </html>
