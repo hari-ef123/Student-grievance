@@ -6,4 +6,5 @@ passlib[argon2]
 python-multipart
 python-jose
 python-dotenv
+aiofiles
 
