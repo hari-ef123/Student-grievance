@@ -479,6 +479,8 @@
                     ? `<div>Inc: ${new Date(item.incident_date.includes('T') && !item.incident_date.includes('Z') ? item.incident_date + 'Z' : item.incident_date).toLocaleDateString()}</div>`
                     : '';
 
+                const attachmentUrl = item.attachment ? (item.attachment.startsWith('http') ? item.attachment : `${CONFIG.API_BASE_URL}/${item.attachment}`) : null;
+
                 const row = `
                 <tr class="${isEmergency ? 'emergency-row' : ''} ${item.category === 'Ragging' ? 'ragging-row' : ''}">
                     <td>${rowNumber} ${isEmergency ? '<span class="emergency-blink" title="Emergency: Over 3 days pending">🚨</span>' : ''}</td>
@@ -486,7 +488,7 @@
                     <td class="${item.category === 'Ragging' ? 'category-urgent' : ''}">${item.category}</td>
                     <td style="max-width: 300px; font-size: 0.9rem;">
                         ${item.description}
-                        ${item.attachment ? `<div style="margin-top: 8px;"><a href="javascript:void(0)" onclick="openPreview('${CONFIG.API_BASE_URL}/${item.attachment}')" style="color: #000; font-weight: 600; font-size: 0.8rem; cursor: pointer;"><i class="fas fa-paperclip"></i> View Evidence</a></div>` : ''}
+                        ${item.attachment ? `<div style="margin-top: 8px;"><a href="javascript:void(0)" onclick="openPreview('${attachmentUrl}')" style="color: #000; font-weight: 600; font-size: 0.8rem; cursor: pointer;"><i class="fas fa-paperclip"></i> View Evidence</a></div>` : ''}
                     </td>
                     <td style="font-size: 0.85rem;">
                         <div style="font-weight: 500;">Sub: ${dateString} ${timeString}</div>
