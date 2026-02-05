@@ -692,13 +692,13 @@
             downloadLink.style.display = 'none';
 
             if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
-                img.src = url;
+                img.src = fullUrl;
                 img.style.display = 'block';
             } else if (extension === 'pdf') {
-                pdf.src = url;
+                pdf.src = fullUrl;
                 pdf.style.display = 'block';
             } else {
-                downloadLink.href = url;
+                downloadLink.href = fullUrl;
                 downloadLink.innerText = `Download File (.${extension})`;
                 downloadLink.style.display = 'block';
             }

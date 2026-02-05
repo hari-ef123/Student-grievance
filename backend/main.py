@@ -81,13 +81,22 @@ async def create_complaint(
             # Create a unique filename
             safe_filename = attachment.filename.replace(" ", "_")
             filename = f"{int(datetime.utcnow().timestamp())}_{safe_filename}"
-            attachment_path = f"uploads/{filename}"
+            
+            # Prepend BACKEND_URL if available
+            backend_url = os.getenv("BACKEND_URL", "").rstrip("/")
+            if backend_url:
+                attachment_save_path = f"uploads/{filename}"
+                attachment_db_path = f"{backend_url}/uploads/{filename}"
+            else:
+                attachment_save_path = f"uploads/{filename}"
+                attachment_db_path = attachment_save_path
+
             content = await attachment.read()
             if content:
-                with open(attachment_path, "wb") as f:
+                with open(attachment_save_path, "wb") as f:
                     f.write(content)
             else:
-                attachment_path = None
+                attachment_db_path = None
 
         # Handle incident_date string to datetime
         dt_incident = None
@@ -108,7 +117,7 @@ async def create_complaint(
             description=description,
             is_anonymous=is_anonymous,
             incident_date=dt_incident,
-            attachment=attachment_path
+            attachment=attachment_db_path
         )
         await new_complaint.insert()
         

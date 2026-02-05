@@ -121,7 +121,13 @@
                                  <h3>${item.category}</h3>
                                  <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 5px;">${item.description}</p>
                                  <p style="font-size: 0.8rem; opacity: 0.6;">Submitted on: ${date}</p>
-                                 ${item.attachment ? `<div style="margin-top: 5px;"><a href="${CONFIG.API_BASE_URL}/${item.attachment}" target="_blank" style="color: #667eea; font-size: 0.8rem;"><i class="fas fa-paperclip"></i> View My Attachment</a></div>` : ''}
+                                 ${item.attachment ? `
+                                    <div style="margin-top: 5px;">
+                                        <a href="${item.attachment.startsWith('http') ? item.attachment : CONFIG.API_BASE_URL + '/' + item.attachment}" 
+                                           target="_blank" style="color: #667eea; font-size: 0.8rem;">
+                                           <i class="fas fa-paperclip"></i> View My Attachment
+                                        </a>
+                                    </div>` : ''}
                                  ${item.admin_remark ? `<p style="margin-top: 10px; color: #f1c40f;"><strong>Admin:</strong> ${item.admin_remark}</p>` : ''}
                              </div>
                              <div class="text-center">
