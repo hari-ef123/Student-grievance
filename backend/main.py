@@ -7,7 +7,7 @@ from datetime import datetime
 import os
 import traceback
 
-from . import models, schemas, database, auth
+import models, schemas, database, auth
 
 from bson import ObjectId
 
@@ -205,19 +205,14 @@ async def update_complaint_status(id: str, update: schemas.ComplaintUpdate, toke
 
 @app.get("/")
 async def read_root():
-    return FileResponse("index.html")
+    return {"message": "Student Grievance API is running"}
 
-# Serve multiple HTML files
-@app.get("/{filename}.html")
-async def read_html(filename: str):
-    file_path = f"{filename}.html"
-    if os.path.exists(file_path):
-        return FileResponse(file_path)
-    raise HTTPException(status_code=404, detail="Page not found")
+# Serving static assets is now disabled for independent operation.
+# Use config.js in frontend to connect.
 
 # Serve static assets
-app.mount("/css", StaticFiles(directory="css"), name="css")
-app.mount("/js", StaticFiles(directory="js"), name="js")
+# app.mount("/css", StaticFiles(directory="frontend/css"), name="css")
+# app.mount("/js", StaticFiles(directory="frontend/js"), name="js")
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")

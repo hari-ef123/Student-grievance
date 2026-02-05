@@ -7,6 +7,7 @@
     <title>Register - Grievance System</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="js/config.js"></script>
 </head>
 
 <body class="auth-page">
@@ -59,11 +60,11 @@
         </div>
     </div>
 
-    <!-- Success Popup Structure -->
-    <div id="successPopup" class="popup-overlay">
+    <!-- Custom Popup Structure -->
+    <div id="statusPopup" class="popup-overlay">
         <div class="popup-card">
-            <div class="checkmark-container">
-                <i class="fas fa-check"></i>
+            <div id="popupIconContainer" class="checkmark-container">
+                <i id="popupIcon" class="fas fa-check"></i>
             </div>
             <h2 id="popupTitle">Success!</h2>
             <p id="popupMessage">Operation completed successfully.</p>
@@ -71,35 +72,35 @@
     </div>
 
     <script>
-        // Password Toggle Functionality
-        const togglePassword = document.querySelector('#togglePassword');
-        const password = document.querySelector('#password');
+        function showStatusPopup(title, message, type = 'success', redirectUrl = null) {
+            const popup = document.getElementById('statusPopup');
+            const iconContainer = document.getElementById('popupIconContainer');
+            const icon = document.getElementById('popupIcon');
 
-        togglePassword.addEventListener('click', function (e) {
-            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-            password.setAttribute('type', type);
-            this.classList.toggle('fa-eye-slash');
-        });
-
-        const toggleConfirmPassword = document.querySelector('#toggleConfirmPassword');
-        const confirmPassword = document.querySelector('#confirm_password');
-
-        toggleConfirmPassword.addEventListener('click', function (e) {
-            const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
-            confirmPassword.setAttribute('type', type);
-            this.classList.toggle('fa-eye-slash');
-        });
-
-        function showSuccessPopup(title, message, redirectUrl) {
-            const popup = document.getElementById('successPopup');
             document.getElementById('popupTitle').innerText = title;
             document.getElementById('popupMessage').innerText = message;
 
+            if (type === 'error') {
+                iconContainer.style.background = 'rgba(255, 107, 107, 0.2)';
+                iconContainer.style.color = '#ff6b6b';
+                icon.className = 'fas fa-times';
+            } else {
+                iconContainer.style.background = 'rgba(46, 204, 113, 0.2)';
+                iconContainer.style.color = '#2ecc71';
+                icon.className = 'fas fa-check';
+            }
+
             popup.classList.add('active');
 
-            setTimeout(() => {
-                window.location.href = redirectUrl;
-            }, 2500);
+            if (redirectUrl) {
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 2000);
+            } else {
+                setTimeout(() => {
+                    popup.classList.remove('active');
+                }, 2500);
+            }
         }
 
         // Reset popup on back navigation (from cache)
@@ -117,7 +118,7 @@
             var pw = document.getElementById("password").value;
             var cpw = document.getElementById("confirm_password").value;
             if (pw !== cpw) {
-                alert("Passwords do not match!");
+                showStatusPopup('Error', 'Passwords do not match!', 'error');
                 return;
             }
 
@@ -138,7 +139,7 @@
             submitBtn.disabled = true;
 
             try {
-                const response = await fetch('/api/auth/register', {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/auth/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -147,14 +148,14 @@
                 });
 
                 if (response.ok) {
-                    showSuccessPopup('Registration Successful!', 'Welcome! You can now log in to the system.', 'login.html');
+                    showStatusPopup('Registration Successful!', 'Welcome! You can now log in to the system.', 'success', 'login.html');
                 } else {
                     const error = await response.json();
-                    alert('Registration Failed: ' + (error.detail || 'Error occurred'));
+                    showStatusPopup('Registration Failed', error.detail || 'Error occurred', 'error');
                 }
             } catch (err) {
                 console.error('Error:', err);
-                alert('Connection Error. Ensure Backend is running.');
+                showStatusPopup('Connection Error', 'Ensure Backend is running.', 'error');
             } finally {
                 submitBtn.innerHTML = originalBtnText;
                 submitBtn.disabled = false;

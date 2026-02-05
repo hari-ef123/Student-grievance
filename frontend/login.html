@@ -7,6 +7,7 @@
     <title>Login - Grievance System</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="js/config.js"></script>
 </head>
 
 <body class="auth-page">
@@ -43,7 +44,7 @@
             <form id="loginForm" autocomplete="off">
                 <div class="form-group text-center">
                     <label style="margin-right: 15px;">
-                        <input type="radio" name="role" value="student"> Student
+                        <input type="radio" name="role" value="student" checked> Student
                     </label>
                     <label>
                         <input type="radio" name="role" value="admin"> Admin
@@ -90,11 +91,11 @@
         </div>
     </div>
 
-    <!-- Success Popup Structure -->
-    <div id="successPopup" class="popup-overlay">
+    <!-- Custom Popup Structure -->
+    <div id="statusPopup" class="popup-overlay">
         <div class="popup-card">
-            <div class="checkmark-container">
-                <i class="fas fa-check"></i>
+            <div id="popupIconContainer" class="checkmark-container">
+                <i id="popupIcon" class="fas fa-check"></i>
             </div>
             <h2 id="popupTitle">Success!</h2>
             <p id="popupMessage">Operation completed successfully.</p>
@@ -102,16 +103,35 @@
     </div>
 
     <script>
-        function showSuccessPopup(title, message, redirectUrl) {
-            const popup = document.getElementById('successPopup');
+        function showStatusPopup(title, message, type = 'success', redirectUrl = null) {
+            const popup = document.getElementById('statusPopup');
+            const iconContainer = document.getElementById('popupIconContainer');
+            const icon = document.getElementById('popupIcon');
+
             document.getElementById('popupTitle').innerText = title;
             document.getElementById('popupMessage').innerText = message;
 
+            if (type === 'error') {
+                iconContainer.style.background = 'rgba(255, 107, 107, 0.2)';
+                iconContainer.style.color = '#ff6b6b';
+                icon.className = 'fas fa-times';
+            } else {
+                iconContainer.style.background = 'rgba(46, 204, 113, 0.2)';
+                iconContainer.style.color = '#2ecc71';
+                icon.className = 'fas fa-check';
+            }
+
             popup.classList.add('active');
 
-            setTimeout(() => {
-                window.location.href = redirectUrl;
-            }, 2500);
+            if (redirectUrl) {
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 2000);
+            } else {
+                setTimeout(() => {
+                    popup.classList.remove('active');
+                }, 2500);
+            }
         }
 
         // Reset popup on back navigation (from cache)
@@ -141,7 +161,7 @@
             submitBtn.disabled = true;
 
             try {
-                const response = await fetch('/api/auth/login', {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -155,18 +175,17 @@
                     localStorage.setItem('role', result.role);
                     localStorage.setItem('user_name', result.name);
 
-                    showSuccessPopup('Login Successful!', `Welcome back, ${result.name}!`, result.role === 'admin' ? 'admin.html' : 'dashboard.html');
+                    showStatusPopup('Login Successful!', `Welcome back, ${result.name}!`, 'success', result.role === 'admin' ? 'admin.html' : 'dashboard.html');
                 } else if (response.status === 403) {
-                    // Specific warning for Role Mismatch
                     const error = await response.json();
-                    alert("⚠️ SECURITY WARNING ⚠️\n\n" + (error.detail || "Access Denied"));
+                    showStatusPopup('Access Denied', error.detail || 'Role mismatch', 'error');
                 } else {
                     const error = await response.json();
-                    alert('Login Failed: ' + (error.detail || 'Invalid credentials'));
+                    showStatusPopup('Login Failed', error.detail || 'Invalid credentials', 'error');
                 }
             } catch (err) {
                 console.error('Error:', err);
-                alert('Connection Error. Ensure Backend is running.');
+                showStatusPopup('Connection Error', 'Ensure Backend is running.', 'error');
             } finally {
                 submitBtn.innerHTML = originalBtnText;
                 submitBtn.disabled = false;

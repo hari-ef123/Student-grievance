@@ -1,7 +1,12 @@
+import sys
+import os
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
-from backend import models, database, auth
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import models, database, auth
 
 async def seed_data():
     print("Starting data seeding...")

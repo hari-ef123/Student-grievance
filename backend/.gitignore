@@ -1,0 +1,16 @@
+# Environment
+.env
+env/
+venv/
+__pycache__/
+*.pyc
+
+# Data
+grievance.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project
+uploads/

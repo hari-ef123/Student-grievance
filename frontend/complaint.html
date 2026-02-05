@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Complaint - Grievance System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="js/config.js"></script>
+</head>
+
+<body>
+    <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
+        <div class="logo"><i class="fas fa-university"></i> SGS</div>
+        <a href="dashboard.html" class="btn btn-outline" style="padding: 8px 20px;">Back to Dashboard</a>
+    </div>
+
+    <div class="container animate-fade-in" style="display: flex; justify-content: center; margin-top: 80px;">
+        <div class="glass-card" style="width: 100%; max-width: 600px; padding: 40px;">
+            <h2><i class="fas fa-edit"></i> File a Complaint</h2>
+            <br>
+
+            <form>
+
+                <div class="form-group">
+                    <label>Incident Date</label>
+                    <input type="date" name="incident_date" id="incident_date" class="form-control"
+                        style="background: rgba(255,255,255,0.1); color: #fff;" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Category (Smart Routing)</label>
+                    <select name="category" class="form-control"
+                        style="background: rgba(255,255,255,0.1); color: #fff;">
+                        <option value="Academic" style="color: #333;">Academic (Routing to HOD)</option>
+                        <option value="Infrastructure" style="color: #333;">Infrastructure (Routing to Maintenance)
+                        </option>
+                        <option value="Canteen" style="color: #333;">Canteen (Routing to Manager)</option>
+                        <option value="Library" style="color: #333;">Library (Routing to Librarian)</option>
+                        <option value="Ragging" style="color: #333;">Ragging (Routing to Anti-Ragging Committee)
+                        </option>
+                        <option value="Other" style="color: #333;">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" rows="5" class="form-control"
+                        placeholder="Describe your issue in detail..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-paperclip"></i> Incident Evidence (Optional)</label>
+                    <input type="file" name="attachment" id="attachment" class="form-control"
+                        style="background: rgba(255,255,255,0.1); color: #fff;">
+                    <p style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px;">Upload images, PDFs, or documents.</p>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" name="is_anonymous" value="1"
+                            style="width: 20px; height: 20px; margin-right: 10px;">
+                        Submit Anonymously (Hide Identity)
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Complaint</button>
+            </form>
+        </div>
+
+        <!-- Custom Popup Structure -->
+        <div id="statusPopup" class="popup-overlay">
+            <div class="popup-card">
+                <div id="popupIconContainer" class="checkmark-container">
+                    <i id="popupIcon" class="fas fa-check"></i>
+                </div>
+                <h2 id="popupTitle">Success!</h2>
+                <p id="popupMessage">Operation completed successfully.</p>
+            </div>
+        </div>
+
+        <script>
+            function showStatusPopup(title, message, type = 'success', redirectUrl = null) {
+                const popup = document.getElementById('statusPopup');
+                const iconContainer = document.getElementById('popupIconContainer');
+                const icon = document.getElementById('popupIcon');
+
+                document.getElementById('popupTitle').innerText = title;
+                document.getElementById('popupMessage').innerText = message;
+
+                if (type === 'error') {
+                    iconContainer.style.background = 'rgba(255, 107, 107, 0.2)';
+                    iconContainer.style.color = '#ff6b6b';
+                    icon.className = 'fas fa-times';
+                } else {
+                    iconContainer.style.background = 'rgba(46, 204, 113, 0.2)';
+                    iconContainer.style.color = '#2ecc71';
+                    icon.className = 'fas fa-check';
+                }
+
+                popup.classList.add('active');
+
+                if (redirectUrl) {
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 2000);
+                } else {
+                    setTimeout(() => {
+                        popup.classList.remove('active');
+                    }, 2500);
+                }
+            }
+        </script>
+
+        <script>
+            // Check auth
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+            }
+
+            // Restrict date picker to past/present only
+            const dateInput = document.getElementById('incident_date');
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.max = today;
+
+            document.querySelector('form').addEventListener('submit', async function (event) {
+                event.preventDefault();
+
+                const formData = new FormData(this);
+                const incidentDateString = formData.get('incident_date');
+
+                // Final validation for future date
+                if (new Date(incidentDateString) > new Date()) {
+                    showStatusPopup('Error', 'Incident Date cannot be in the future. Please select a correct date.', 'error');
+                    return;
+                }
+
+                // Ensure is_anonymous is sent in a way FastAPI Form bool can easily parse (true or false)
+                formData.set('is_anonymous', this.querySelector('[name="is_anonymous"]').checked ? 'true' : 'false');
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                submitBtn.disabled = true;
+
+                try {
+                    // Using relative URL to avoid CORS/IP mismatch issues
+                    const response = await fetch(`${CONFIG.API_BASE_URL}/api/complaints`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        showStatusPopup('Submitted!', 'Complaint Submitted Successfully!', 'success', 'dashboard.html');
+                    } else {
+                        const text = await response.text();
+                        try {
+                            const error = JSON.parse(text);
+                            showStatusPopup('Submission Failed', error.detail || 'Error occurred', 'error');
+                        } catch (e) {
+                            showStatusPopup('Server Error', 'Unexpected response from server.', 'error');
+                        }
+                    }
+                } catch (err) {
+                    console.error('Network/Fetch Error:', err);
+                    showStatusPopup('Connection Error', 'Ensure Backend is running.', 'error');
+                } finally {
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                }
+            });
+        </script>
+</body>
+
+</html>

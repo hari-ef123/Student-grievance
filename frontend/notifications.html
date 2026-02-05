@@ -7,6 +7,7 @@
     <title>Notifications - Grievance System</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="js/config.js"></script>
     <style>
         .notif-card {
             display: flex;
@@ -166,7 +167,7 @@
 
         async function loadNotifications() {
             try {
-                const response = await fetch('/api/admin/complaints', {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/admin/complaints`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 

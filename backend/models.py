@@ -20,7 +20,7 @@ class User(Document):
     role: str = "student"
 
     class Settings:
-        name = "users"
+        name = "user"
 
 class Complaint(Document):
     student_id: str # References User ID string
@@ -34,4 +34,4 @@ class Complaint(Document):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Settings:
-        name = "complaints"
+        name = "complaint"

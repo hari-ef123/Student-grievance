@@ -7,6 +7,7 @@
     <title>Admin Dashboard - Grievance System</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="js/config.js"></script>
     <style>
         .table-container {
             overflow-x: auto;
@@ -192,6 +193,41 @@
         .ragging-row {
             background: rgba(179, 57, 57, 0.2) !important;
         }
+
+        /* Remark Modal Styles */
+        .remark-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .remark-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .remark-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            color: white;
+        }
     </style>
 </head>
 
@@ -286,6 +322,7 @@
 
     <!-- Admin Settings Modal -->
     <div id="settingsOverlay" class="settings-overlay">
+        <!-- ... existing content ... -->
         <div class="settings-card">
             <div style="display: flex; justify-content: space-between; align-items: start;">
                 <h2><i class="fas fa-cog"></i> Admin Settings</h2>
@@ -318,6 +355,25 @@
         </div>
     </div>
 
+    <!-- Admin Remark Modal -->
+    <div id="remarkOverlay" class="remark-overlay">
+        <div class="remark-card">
+            <h2><i class="fas fa-comment-alt"></i> Add Admin Remark</h2>
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 20px;">Provide a solution or update for this
+                complaint.</p>
+
+            <div class="form-group">
+                <textarea id="adminRemarkInput" class="form-control" rows="4"
+                    placeholder="Enter solution or status update..."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="closeRemarkModal()" class="btn btn-outline" style="flex: 1;">Cancel</button>
+                <button id="confirmRemarkBtn" class="btn btn-primary" style="flex: 1;">Update Complaint</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/mock_data.js"></script>
     <script>
         const token = localStorage.getItem('token');
@@ -336,7 +392,7 @@
 
         async function loadComplaints() {
             try {
-                const response = await fetch('/api/admin/complaints', {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/admin/complaints`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -430,7 +486,7 @@
                     <td class="${item.category === 'Ragging' ? 'category-urgent' : ''}">${item.category}</td>
                     <td style="max-width: 300px; font-size: 0.9rem;">
                         ${item.description}
-                        ${item.attachment ? `<div style="margin-top: 8px;"><a href="javascript:void(0)" onclick="openPreview('/${item.attachment}')" style="color: #000; font-weight: 600; font-size: 0.8rem; cursor: pointer;"><i class="fas fa-paperclip"></i> View Evidence</a></div>` : ''}
+                        ${item.attachment ? `<div style="margin-top: 8px;"><a href="javascript:void(0)" onclick="openPreview('${CONFIG.API_BASE_URL}/${item.attachment}')" style="color: #000; font-weight: 600; font-size: 0.8rem; cursor: pointer;"><i class="fas fa-paperclip"></i> View Evidence</a></div>` : ''}
                     </td>
                     <td style="font-size: 0.85rem;">
                         <div style="font-weight: 500;">Sub: ${dateString} ${timeString}</div>
@@ -508,22 +564,47 @@
 
         function updateStats(data) {
             const total = data.length;
-            const pending = data.filter(c => c.status === 'Pending' || c.status === 'Open').length;
+            const pending = data.filter(c => c.status === 'Pending' || c.status === 'In Progress').length;
 
             document.querySelector('.grid-container .glass-card:nth-child(1) p').innerText = total;
             document.querySelector('.grid-container .glass-card:nth-child(2) p').innerText = pending;
         }
 
+        let currentUpdatingId = null;
+        let currentStatus = null;
+
         async function updateStatus(id) {
             const newStatus = document.getElementById(`status-${id}`).value;
-            let remark = null;
 
             if (newStatus === 'Resolved' || newStatus === 'In Progress') {
-                remark = prompt("Enter Admin Remark/Solution (Optional):", "Action taken.");
-            }
+                currentUpdatingId = id;
+                currentStatus = newStatus;
+                document.getElementById('adminRemarkInput').value = "Action taken.";
+                document.getElementById('remarkOverlay').classList.add('active');
 
+                // Set up the confirm button click handler once
+                document.getElementById('confirmRemarkBtn').onclick = submitStatusWithRemark;
+            } else {
+                // Direct update for simple status changes (though usually all status updates might need a remark)
+                submitStatusUpdate(id, newStatus, null);
+            }
+        }
+
+        function closeRemarkModal() {
+            document.getElementById('remarkOverlay').classList.remove('active');
+            currentUpdatingId = null;
+            currentStatus = null;
+        }
+
+        async function submitStatusWithRemark() {
+            const remark = document.getElementById('adminRemarkInput').value;
+            await submitStatusUpdate(currentUpdatingId, currentStatus, remark);
+            closeRemarkModal();
+        }
+
+        async function submitStatusUpdate(id, newStatus, remark) {
             try {
-                const response = await fetch(`/api/admin/complaints/${id}`, {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/admin/complaints/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -533,14 +614,14 @@
                 });
 
                 if (response.ok) {
-                    alert('Status updated successfully!');
+                    showStatusPopup('Updated!', 'Status updated successfully!', 'success');
                     loadComplaints();
                 } else {
-                    alert('Failed to update status.');
+                    showStatusPopup('Failed', 'Failed to update status.', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error connecting to backend.');
+                showStatusPopup('Error', 'Error connecting to backend.', 'error');
             }
         }
 
@@ -573,23 +654,23 @@
             btn.innerText = 'Registering...';
 
             try {
-                const response = await fetch('/api/auth/register', {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
 
                 if (response.ok) {
-                    alert('New Admin Registered Successfully!');
+                    showStatusPopup('Success!', 'New Admin Registered Successfully!', 'success');
                     form.reset();
                     toggleSettings();
                 } else {
                     const error = await response.json();
-                    alert('Registration Failed: ' + (error.detail || 'Unknown error'));
+                    showStatusPopup('Registration Failed', error.detail || 'Unknown error', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Connection error. Please try again.');
+                showStatusPopup('Connection Error', 'Please try again.', 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalText;
@@ -624,6 +705,49 @@
             <img id="previewImg" src="" alt="Evidence Preview">
         </div>
     </div>
+    <!-- Custom Popup Structure -->
+    <div id="statusPopup" class="popup-overlay">
+        <div class="popup-card">
+            <div id="popupIconContainer" class="checkmark-container">
+                <i id="popupIcon" class="fas fa-check"></i>
+            </div>
+            <h2 id="popupTitle">Success!</h2>
+            <p id="popupMessage">Operation completed successfully.</p>
+        </div>
+    </div>
+
+    <script>
+        function showStatusPopup(title, message, type = 'success', redirectUrl = null) {
+            const popup = document.getElementById('statusPopup');
+            const iconContainer = document.getElementById('popupIconContainer');
+            const icon = document.getElementById('popupIcon');
+
+            document.getElementById('popupTitle').innerText = title;
+            document.getElementById('popupMessage').innerText = message;
+
+            if (type === 'error') {
+                iconContainer.style.background = 'rgba(255, 107, 107, 0.2)';
+                iconContainer.style.color = '#ff6b6b';
+                icon.className = 'fas fa-times';
+            } else {
+                iconContainer.style.background = 'rgba(46, 204, 113, 0.2)';
+                iconContainer.style.color = '#2ecc71';
+                icon.className = 'fas fa-check';
+            }
+
+            popup.classList.add('active');
+
+            if (redirectUrl) {
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 2000);
+            } else {
+                setTimeout(() => {
+                    popup.classList.remove('active');
+                }, 2500);
+            }
+        }
+    </script>
 </body>
 
 </html>

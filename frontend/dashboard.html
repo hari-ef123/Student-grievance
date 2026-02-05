@@ -7,6 +7,7 @@
     <title>Dashboard - Student Grievance System</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="js/config.js"></script>
 </head>
 
 <body>
@@ -64,7 +65,49 @@
         </div>
     </div>
 
+    <!-- Custom Popup Structure -->
+    <div id="statusPopup" class="popup-overlay">
+        <div class="popup-card">
+            <div id="popupIconContainer" class="checkmark-container">
+                <i id="popupIcon" class="fas fa-check"></i>
+            </div>
+            <h2 id="popupTitle">Success!</h2>
+            <p id="popupMessage">Operation completed successfully.</p>
+        </div>
+    </div>
+
     <script>
+        function showStatusPopup(title, message, type = 'success', redirectUrl = null) {
+            const popup = document.getElementById('statusPopup');
+            const iconContainer = document.getElementById('popupIconContainer');
+            const icon = document.getElementById('popupIcon');
+
+            document.getElementById('popupTitle').innerText = title;
+            document.getElementById('popupMessage').innerText = message;
+
+            if (type === 'error') {
+                iconContainer.style.background = 'rgba(255, 107, 107, 0.2)';
+                iconContainer.style.color = '#ff6b6b';
+                icon.className = 'fas fa-times';
+            } else {
+                iconContainer.style.background = 'rgba(46, 204, 113, 0.2)';
+                iconContainer.style.color = '#2ecc71';
+                icon.className = 'fas fa-check';
+            }
+
+            popup.classList.add('active');
+
+            if (redirectUrl) {
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 2000);
+            } else {
+                setTimeout(() => {
+                    popup.classList.remove('active');
+                }, 2500);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('token');
             const userName = localStorage.getItem('user_name');
@@ -80,15 +123,14 @@
             }
 
             try {
-                const response = await fetch('/api/complaints/my', {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/complaints/my`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
                 if (response.status === 401) {
-                    alert('Session expired. Please login again.');
-                    logout();
+                    showStatusPopup('Session Expired', 'Please login again.', 'error', 'login.html');
                     return;
                 }
 
