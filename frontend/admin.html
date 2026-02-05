@@ -684,7 +684,13 @@
             const pdf = document.getElementById('previewPdf');
             const downloadLink = document.getElementById('previewDownload');
 
-            const extension = url.split('.').pop().toLowerCase();
+            // Handle absolute vs relative URLs
+            let fullUrl = url;
+            if (url && !url.startsWith('http')) {
+                fullUrl = `${CONFIG.API_BASE_URL}/${url}`;
+            }
+
+            const extension = fullUrl.split('.').pop().toLowerCase();
 
             // Reset visibility
             img.style.display = 'none';
