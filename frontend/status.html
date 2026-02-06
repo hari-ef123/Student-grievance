@@ -11,9 +11,18 @@
 </head>
 
 <body>
-    <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
-        <div class="logo"><i class="fas fa-university"></i> SGS</div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <a href="index.html" class="btn btn-outline"
+            style="padding: 5px 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px;">
+            <i class="fas fa-home"></i> Home
+        </a>
+        <button onclick="window.location.reload()" class="btn btn-outline"
+            style="padding: 5px 10px; font-size: 0.9rem; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"
+            title="Refresh Page">
+            <i class="fas fa-sync-alt"></i>
+        </button>
         <a href="dashboard.html" class="btn btn-outline" style="padding: 8px 20px;">Back to Dashboard</a>
+    </div>
     </div>
 
     <div class="container animate-fade-in" style="margin-top: 100px;">
@@ -121,13 +130,21 @@
                                  <h3>${item.category}</h3>
                                  <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 5px;">${item.description}</p>
                                  <p style="font-size: 0.8rem; opacity: 0.6;">Submitted on: ${date}</p>
-                                 ${item.attachment ? `
-                                    <div style="margin-top: 5px;">
-                                        <a href="${item.attachment.startsWith('http') ? item.attachment : CONFIG.API_BASE_URL + '/' + item.attachment}" 
-                                           target="_blank" style="color: #667eea; font-size: 0.8rem;">
-                                           <i class="fas fa-paperclip"></i> View My Attachment
-                                        </a>
-                                    </div>` : ''}
+                                 ${item.attachment ? (() => {
+                            let path = item.attachment.replace(/\\/g, '/');
+                            if (path.includes('/uploads/')) {
+                                path = 'uploads/' + path.split('/uploads/').pop();
+                            } else if (!path.startsWith('uploads/')) {
+                                path = 'uploads/' + path;
+                            }
+                            const finalUrl = `${CONFIG.API_BASE_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+                            return `
+                                     <div style="margin-top: 5px;">
+                                         <a href="${finalUrl}" target="_blank" style="color: #000; font-weight: 700; font-size: 0.8rem; text-decoration: none;">
+                                            <i class="fas fa-paperclip"></i> View Evidence
+                                         </a>
+                                     </div>`;
+                        })() : ''}
                                  ${item.admin_remark ? `<p style="margin-top: 10px; color: #f1c40f;"><strong>Admin:</strong> ${item.admin_remark}</p>` : ''}
                              </div>
                              <div class="text-center">

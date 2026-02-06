@@ -74,7 +74,7 @@ async def create_complaint(
         
         user_id = payload.get("user_id")
         
-        attachment_path = None
+        attachment_db_path = None
         if attachment and attachment.filename:
             # Create uploads directory if it doesn't exist
             os.makedirs("uploads", exist_ok=True)
@@ -82,15 +82,9 @@ async def create_complaint(
             safe_filename = attachment.filename.replace(" ", "_")
             filename = f"{int(datetime.utcnow().timestamp())}_{safe_filename}"
             
-            # Prepend BACKEND_URL if available
-            backend_url = os.getenv("BACKEND_URL", "").rstrip("/")
-            if backend_url:
-                attachment_save_path = f"uploads/{filename}"
-                attachment_db_path = f"{backend_url}/uploads/{filename}"
-            else:
-                attachment_save_path = f"uploads/{filename}"
-                attachment_db_path = attachment_save_path
-
+            attachment_save_path = f"uploads/{filename}"
+            attachment_db_path = attachment_save_path
+ 
             content = await attachment.read()
             if content:
                 with open(attachment_save_path, "wb") as f:

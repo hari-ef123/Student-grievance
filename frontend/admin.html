@@ -241,7 +241,15 @@
                     <span id="notif-badge" class="badge">0</span>
                 </a>
             </div>
-            <span style="margin-right: 15px;">Administrator</span>
+            <a href="index.html" class="btn btn-outline"
+                style="padding: 5px 15px; font-size: 0.9rem; margin-right: 10px; display: flex; align-items: center; gap: 5px;">
+                <i class="fas fa-home"></i> Home
+            </a>
+            <button onclick="window.location.reload()" class="btn btn-outline"
+                style="padding: 5px 10px; font-size: 0.9rem; margin-right: 10px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"
+                title="Refresh Page">
+                <i class="fas fa-sync-alt"></i>
+            </button>
             <button onclick="toggleSettings()" class="btn btn-outline"
                 style="padding: 5px 15px; font-size: 0.9rem; margin-right: 10px;">
                 <i class="fas fa-cog"></i> Settings
@@ -255,12 +263,13 @@
 
         <!-- Stats -->
         <div class="grid-container mb-20">
-            <div class="glass-card text-center" style="padding: 20px;">
+            <div class="glass-card text-center" onclick="filterComplaints('all')"
+                style="padding: 20px; cursor: pointer;">
                 <h4>Total Complaints</h4>
                 <p style="font-size: 2rem; font-weight: bold;">0</p>
-                <!-- This would be dynamic in PHP -->
             </div>
-            <div class="glass-card text-center" style="padding: 20px;">
+            <div class="glass-card text-center" onclick="filterComplaints('pending')"
+                style="padding: 20px; cursor: pointer;">
                 <h4>Pending Action</h4>
                 <p style="font-size: 2rem; font-weight: bold; color: #f39c12;">0</p>
             </div>
@@ -446,6 +455,20 @@
             window.location.href = 'admin.html';
         }
 
+        function filterComplaints(status) {
+            if (status === 'all') {
+                filteredComplaints = [...allComplaints];
+                document.getElementById('searchInput').value = '';
+                document.getElementById('clearFilterBtn').style.display = 'none';
+            } else if (status === 'pending') {
+                filteredComplaints = allComplaints.filter(c => c.status === 'Pending' || c.status === 'In Progress');
+                document.getElementById('searchInput').value = '';
+                document.getElementById('clearFilterBtn').style.display = 'block';
+            }
+            currentPage = 1;
+            renderTable();
+        }
+
         function renderTable() {
             const tbody = document.getElementById('complaints-table');
             const paginationDiv = document.getElementById('pagination');
@@ -479,16 +502,26 @@
                     ? `<div>Inc: ${new Date(item.incident_date.includes('T') && !item.incident_date.includes('Z') ? item.incident_date + 'Z' : item.incident_date).toLocaleDateString()}</div>`
                     : '';
 
-                const attachmentUrl = item.attachment ? (item.attachment.startsWith('http') ? item.attachment : `${CONFIG.API_BASE_URL}/${item.attachment}`) : null;
+                let attachmentUrl = null;
+                if (item.attachment) {
+                    // Extract relative path to handle absolute paths from different hosts/ports
+                    let path = item.attachment.replace(/\\/g, '/');
+                    if (path.includes('/uploads/')) {
+                        path = 'uploads/' + path.split('/uploads/').pop();
+                    } else if (!path.startsWith('uploads/')) {
+                        path = 'uploads/' + path;
+                    }
+                    attachmentUrl = `${CONFIG.API_BASE_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+                }
 
                 const row = `
                 <tr class="${isEmergency ? 'emergency-row' : ''} ${item.category === 'Ragging' ? 'ragging-row' : ''}">
                     <td>${rowNumber} ${isEmergency ? '<span class="emergency-blink" title="Emergency: Over 3 days pending">🚨</span>' : ''}</td>
                     <td>${studentDisplay}</td>
                     <td class="${item.category === 'Ragging' ? 'category-urgent' : ''}">${item.category}</td>
-                    <td style="max-width: 300px; font-size: 0.9rem;">
+                    <td style="max-width: 300px; font-size: 0.9rem; word-break: break-word; overflow-wrap: anywhere;">
                         ${item.description}
-                        ${item.attachment ? `<div style="margin-top: 8px;"><a href="javascript:void(0)" onclick="openPreview('${attachmentUrl}')" style="color: #000; font-weight: 600; font-size: 0.8rem; cursor: pointer;"><i class="fas fa-paperclip"></i> View Evidence</a></div>` : ''}
+                        ${item.attachment ? `<div style="margin-top: 8px;"><a href="javascript:void(0)" onclick="openPreview('${attachmentUrl}')" style="color: #000; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-decoration: none;"><i class="fas fa-paperclip"></i> View Evidence</a></div>` : ''}
                     </td>
                     <td style="font-size: 0.85rem;">
                         <div style="font-weight: 500;">Sub: ${dateString} ${timeString}</div>
@@ -686,13 +719,18 @@
             const pdf = document.getElementById('previewPdf');
             const downloadLink = document.getElementById('previewDownload');
 
-            // Handle absolute vs relative URLs
-            let fullUrl = url;
+            // Handle absolute vs relative URLs and Windows backslashes
+            let fullUrl = url.replace(/\\/g, '/');
             if (url && !url.startsWith('http')) {
-                fullUrl = `${CONFIG.API_BASE_URL}/${url}`;
+                // Ensure no double slashes when joining
+                const baseUrl = CONFIG.API_BASE_URL.replace(/\/$/, '');
+                const cleanUrl = url.startsWith('/') ? url : '/' + url;
+                fullUrl = baseUrl + cleanUrl;
             }
 
-            const extension = fullUrl.split('.').pop().toLowerCase();
+            // Get extension correctly even if there are query params
+            const pathWithoutQuery = fullUrl.split(/[#?]/)[0];
+            const extension = pathWithoutQuery.split('.').pop().toLowerCase();
 
             // Reset visibility
             img.style.display = 'none';
@@ -706,9 +744,13 @@
                 pdf.src = fullUrl;
                 pdf.style.display = 'block';
             } else {
+                // For any other file type (Docx, Excel, Txt, etc.)
                 downloadLink.href = fullUrl;
-                downloadLink.innerText = `Download File (.${extension})`;
+                downloadLink.innerHTML = `<i class="fas fa-file-download"></i> Open/Download File (.${extension})`;
                 downloadLink.style.display = 'block';
+
+                // Try to open it in a new tab as well for convenience
+                window.open(fullUrl, '_blank');
             }
 
             modal.classList.add('active');
