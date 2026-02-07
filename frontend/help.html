@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help Desk - Grievance System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="js/config.js"></script>
+    <script src="js/theme.js"></script>
+</head>
+
+<body>
+    <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
+        <a href="index.html" class="logo"
+            style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-headset"></i> Help Desk
+        </a>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="dashboard.html" class="btn btn-outline" style="padding: 8px 20px;">Dashboard</a>
+        </div>
+    </div>
+
+    <div class="container animate-fade-in" style="margin-top: 100px;">
+        <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+            <!-- Send Message -->
+            <div class="glass-card" style="flex: 1; min-width: 300px;">
+                <h3><i class="fas fa-paper-plane"></i> Contact Support</h3>
+                <p style="opacity: 0.8; margin-bottom: 20px;">Have a question or technical issue? Send us a message.</p>
+                <form id="supportForm">
+                    <div class="form-group">
+                        <label>Your Message</label>
+                        <textarea id="supportMsg" class="form-control" rows="5" placeholder="Explain your issue..."
+                            required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send Message</button>
+                </form>
+            </div>
+
+            <!-- Previous Conversations -->
+            <div class="glass-card" style="flex: 2; min-width: 300px;">
+                <h3><i class="fas fa-comments"></i> Your Inquiries</h3>
+                <div id="support-history"
+                    style="margin-top: 20px; max-height: 400px; overflow-y: auto; padding-right: 10px;">
+                    <p style="opacity: 0.6;">Loading history...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusPopup" class="popup-overlay">
+        <div class="popup-card">
+            <div id="popupIconContainer" class="checkmark-container"><i id="popupIcon" class="fas fa-check"></i></div>
+            <h2 id="popupTitle"></h2>
+            <p id="popupMessage"></p>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = 'login.html';
+
+        function showStatusPopup(title, message, type = 'success') {
+            const popup = document.getElementById('statusPopup');
+            const iconContainer = document.getElementById('popupIconContainer');
+            const icon = document.getElementById('popupIcon');
+            document.getElementById('popupTitle').innerText = title;
+            document.getElementById('popupMessage').innerText = message;
+            if (type === 'error') {
+                iconContainer.style.background = 'rgba(255, 107, 107, 0.2)';
+                iconContainer.style.color = '#ff6b6b';
+                icon.className = 'fas fa-times';
+            } else {
+                iconContainer.style.background = 'rgba(46, 204, 113, 0.2)';
+                iconContainer.style.color = '#2ecc71';
+                icon.className = 'fas fa-check';
+            }
+            popup.classList.add('active');
+            setTimeout(() => popup.classList.remove('active'), 2500);
+        }
+
+        async function loadSupportHistory() {
+            // In a full implementation, we'd have a GET /api/support/my
+            // For now, we'll use a placeholder or assume student can only see replies via notifications.
+            // Let's implement history loading if we had the endpoint.
+            document.getElementById('support-history').innerHTML = '<p style="opacity: 0.6;">Contact support at support@college.edu or wait for admin replies in your dashboard.</p>';
+        }
+
+        document.getElementById('supportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = document.getElementById('supportMsg').value;
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/support/message`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ message })
+                });
+                if (response.ok) {
+                    showStatusPopup('Sent!', 'Your message has been sent to the support team.');
+                    document.getElementById('supportMsg').value = '';
+                } else {
+                    showStatusPopup('Error', 'Failed to send message.', 'error');
+                }
+            } catch (err) { showStatusPopup('Error', 'Connection failed.', 'error'); }
+        });
+
+        loadSupportHistory();
+    </script>
+</body>
+
+</html>

@@ -7,7 +7,9 @@
     <title>Admin Dashboard - Grievance System</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/config.js"></script>
+    <script src="js/theme.js"></script>
     <style>
         .table-container {
             overflow-x: auto;
@@ -105,7 +107,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 3000;
             opacity: 0;
             visibility: hidden;
             transition: all 0.3s ease;
@@ -126,6 +128,10 @@
             max-width: 500px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             color: white;
+            max-height: 85vh;
+            /* Prevent cut-off on small screens */
+            overflow-y: auto;
+            /* Enable scrolling */
         }
 
         .settings-card h2 {
@@ -233,45 +239,64 @@
 
 <body>
     <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px; z-index: 2000;">
-        <div class="logo"><i class="fas fa-user-shield"></i> Admin Panel</div>
+        <a href="index.html" class="logo"
+            style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-user-shield"></i> Admin Panel
+        </a>
         <div style="display: flex; align-items: center;">
-            <div class="notification-wrapper">
+            <a href="index.html" class="btn btn-outline"
+                style="padding: 5px 15px; font-size: 0.9rem; margin-right: 10px; display: flex; align-items: center; gap: 5px;">
+                <i class="fas fa-home"></i> Home
+            </a>
+
+            <div class="notification-wrapper" style="margin-right: 15px;">
                 <a href="notifications.html" class="notification-bell">
                     <i class="fas fa-bell"></i>
                     <span id="notif-badge" class="badge">0</span>
                 </a>
             </div>
-            <a href="index.html" class="btn btn-outline"
-                style="padding: 5px 15px; font-size: 0.9rem; margin-right: 10px; display: flex; align-items: center; gap: 5px;">
-                <i class="fas fa-home"></i> Home
-            </a>
-            <button onclick="window.location.reload()" class="btn btn-outline"
-                style="padding: 5px 10px; font-size: 0.9rem; margin-right: 10px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"
-                title="Refresh Page">
-                <i class="fas fa-sync-alt"></i>
-            </button>
+
+
             <button onclick="toggleSettings()" class="btn btn-outline"
                 style="padding: 5px 15px; font-size: 0.9rem; margin-right: 10px;">
                 <i class="fas fa-cog"></i> Settings
             </button>
-            <a href="#" onclick="return handleLogout(event)" class="btn btn-outline"
-                style="padding: 5px 15px; font-size: 0.9rem;">Logout</a>
+
+            <a href="profile.html" class="btn btn-outline" style="padding: 5px 15px; font-size: 0.9rem;">
+                <i class="fas fa-user-circle"></i> Profile
+            </a>
         </div>
     </div>
 
     <div class="container animate-fade-in" style="margin-top: 100px;">
 
         <!-- Stats -->
-        <div class="grid-container mb-20">
+        <div class="grid-container mb-20" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
             <div class="glass-card text-center" onclick="filterComplaints('all')"
                 style="padding: 20px; cursor: pointer;">
-                <h4>Total Complaints</h4>
-                <p style="font-size: 2rem; font-weight: bold;">0</p>
+                <h4>Total</h4>
+                <p id="total-stat" style="font-size: 2.2rem; font-weight: bold;">0</p>
             </div>
             <div class="glass-card text-center" onclick="filterComplaints('pending')"
                 style="padding: 20px; cursor: pointer;">
-                <h4>Pending Action</h4>
-                <p style="font-size: 2rem; font-weight: bold; color: #f39c12;">0</p>
+                <h4>Pending</h4>
+                <p id="pending-stat" style="font-size: 2.2rem; font-weight: bold; color: #f39c12;">0</p>
+            </div>
+            <div class="glass-card text-center" style="padding: 20px;">
+                <h4>Resolved %</h4>
+                <p id="resolved-percent" style="font-size: 2.2rem; font-weight: bold; color: #2ecc71;">0%</p>
+            </div>
+            <div class="glass-card text-center" style="padding: 20px;">
+                <h4>Pending %</h4>
+                <p id="pending-percent" style="font-size: 2.2rem; font-weight: bold; color: #ff6b6b;">0%</p>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="glass-card mb-20">
+            <h3><i class="fas fa-chart-line"></i> Monthly Grievance Volume</h3>
+            <div style="height: 300px; width: 100%;">
+                <canvas id="monthlyChart"></canvas>
             </div>
         </div>
 
@@ -333,15 +358,37 @@
     <div id="settingsOverlay" class="settings-overlay">
         <!-- ... existing content ... -->
         <div class="settings-card">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h2><i class="fas fa-cog"></i> Admin Settings</h2>
                 <button onclick="toggleSettings()" class="btn btn-outline" style="padding: 5px 10px;">&times;</button>
             </div>
 
-            <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+            <!-- Main Settings Menu -->
+            <div id="settingsMainMenu" style="margin-top: 20px;">
+                <button onclick="showAdminForm()" class="btn btn-primary"
+                    style="width: 100%; margin-bottom: 20px; padding: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <i class="fas fa-user-plus"></i> Register New Admin
+                </button>
+
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                    <h3 style="margin-bottom: 15px;">System</h3>
+                    <button onclick="logout()" class="btn btn-outline"
+                        style="width: 100%; border-color: #ff6b6b; color: #ff6b6b; padding: 10px;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Registration Form (Hidden by default) -->
+            <div id="adminRegisterSection" style="display: none; margin-top: 20px;">
+                <button onclick="showSettingsMenu()" class="btn btn-outline"
+                    style="margin-bottom: 20px; padding: 5px 15px; font-size: 0.85rem;">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+
                 <h3>Register New Admin</h3>
-                <p style="font-size: 0.9rem; opacity: 0.7; margin: 10px 0 20px;">Create another administrator account
-                    for the system.</p>
+                <p style="font-size: 0.9rem; opacity: 0.7; margin: 5px 0 20px;">Create another administrator account.
+                </p>
 
                 <form id="newAdminForm" onsubmit="registerNewAdmin(event)">
                     <div class="form-group">
@@ -397,7 +444,11 @@
         let currentPage = 1;
         const itemsPerPage = 10;
 
-        document.addEventListener('DOMContentLoaded', loadComplaints);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComplaints();
+            loadAnalytics();
+            updateNotificationCount();
+        });
 
         async function loadComplaints() {
             try {
@@ -432,6 +483,7 @@
                 currentPage = 1;
                 renderTable();
                 updateStats(allComplaints);
+                loadAnalytics(); // Fetch real aggregated stats from backend
                 updateNotifications();
             } catch (err) {
                 console.error('Error:', err);
@@ -521,7 +573,7 @@
                     <td class="${item.category === 'Ragging' ? 'category-urgent' : ''}">${item.category}</td>
                     <td style="max-width: 300px; font-size: 0.9rem; word-break: break-word; overflow-wrap: anywhere;">
                         ${item.description}
-                        ${item.attachment ? `<div style="margin-top: 8px;"><a href="javascript:void(0)" onclick="openPreview('${attachmentUrl}')" style="color: #000; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-decoration: none;"><i class="fas fa-paperclip"></i> View Evidence</a></div>` : ''}
+                        ${item.attachment ? `<div style="margin-top: 8px;"><a href="javascript:void(0)" onclick="openPreview('${attachmentUrl.replace(/'/g, "\\'")}')" style="color: #000; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-decoration: none;"><i class="fas fa-paperclip"></i> View Evidence</a></div>` : ''}
                     </td>
                     <td style="font-size: 0.85rem;">
                         <div style="font-weight: 500;">Sub: ${dateString} ${timeString}</div>
@@ -601,8 +653,67 @@
             const total = data.length;
             const pending = data.filter(c => c.status === 'Pending' || c.status === 'In Progress').length;
 
-            document.querySelector('.grid-container .glass-card:nth-child(1) p').innerText = total;
-            document.querySelector('.grid-container .glass-card:nth-child(2) p').innerText = pending;
+            document.getElementById('total-stat').innerText = total;
+            document.getElementById('pending-stat').innerText = pending;
+        }
+
+        async function loadAnalytics() {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/admin/analytics`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('resolved-percent').innerText = data.resolved_percent + '%';
+                    document.getElementById('pending-percent').innerText = data.pending_percent + '%';
+                    renderMonthlyChart(data.monthly_data);
+                }
+            } catch (err) { console.error("Analytics error:", err); }
+        }
+
+        let myChart = null;
+        function renderMonthlyChart(monthlyData) {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            if (myChart) myChart.destroy();
+
+            const labels = monthlyData.map(d => d.month);
+            const values = monthlyData.map(d => d.count);
+
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const color = isDark ? '#e0e0e0' : 'rgba(255,255,255,0.8)';
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Grievance Volume',
+                        data: values,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: color }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: color }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: color } }
+                    }
+                }
+            });
         }
 
         let currentUpdatingId = null;
@@ -672,7 +783,23 @@
 
         // --- Settings Functions ---
         function toggleSettings() {
-            document.getElementById('settingsOverlay').classList.toggle('active');
+            const overlay = document.getElementById('settingsOverlay');
+            overlay.classList.toggle('active');
+            if (overlay.classList.contains('active')) {
+                showSettingsMenu(); // Reset to main menu when opening
+            }
+        }
+
+        function showAdminForm() {
+            document.getElementById('settingsMainMenu').style.display = 'none';
+            document.getElementById('adminRegisterSection').style.display = 'block';
+        }
+
+        function showSettingsMenu() {
+            document.getElementById('settingsMainMenu').style.display = 'block';
+            document.getElementById('adminRegisterSection').style.display = 'none';
+            // Optional: Reset form when going back
+            document.getElementById('newAdminForm').reset();
         }
 
         async function registerNewAdmin(event) {

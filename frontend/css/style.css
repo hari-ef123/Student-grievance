@@ -1,12 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
 :root {
-    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --glass-bg: rgba(255, 255, 255, 0.15);
-    --glass-border: rgba(255, 255, 255, 0.2);
-    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    /* Light Mode (Default) - Lighter for contrast */
+    --bg-primary: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);
+    --glass-bg: rgba(255, 255, 255, 0.25);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
     --text-color: #ffffff;
+    /* Keep white text for contrast on colored bg */
+    --btn-primary-bg: rgba(255, 255, 255, 0.9);
+    --btn-primary-text: #3f2b96;
     --card-radius: 15px;
+}
+
+html[data-theme="dark"] {
+    /* Dark Mode - Deep Navy */
+    --bg-primary: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    --glass-bg: rgba(0, 0, 0, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.9);
+    --text-color: #e0e0e0;
+    --btn-primary-bg: #4e6ff3;
+    --btn-primary-text: #ffffff;
 }
 
 * {
@@ -17,14 +32,14 @@
 }
 
 body {
-    background: var(--bg-gradient);
+    background: var(--bg-primary);
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     color: var(--text-color);
     overflow-x: hidden;
-    /* Prevent horizontal scroll */
+    transition: background 0.3s ease, color 0.3s ease;
 }
 
 a {
@@ -42,7 +57,8 @@ a {
 
 /* Auth Page Centering Utility */
 .auth-page {
-    /* Layout handled by flex container */
+    /* Styles for auth page */
+    min-height: 100vh;
 }
 
 .auth-page .container {
@@ -112,13 +128,14 @@ a {
 }
 
 .btn-primary {
-    background: rgba(255, 255, 255, 0.9);
-    color: #764ba2;
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
 }
 
 .btn-primary:hover {
-    background: #ffffff;
+    background: var(--text-color);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    color: var(--btn-primary-text);
 }
 
 .btn-outline {
@@ -146,6 +163,12 @@ a {
     color: white;
     font-size: 1rem;
     outline: none;
+    transition: 0.3s;
+}
+
+[data-theme="dark"] .form-control {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .form-control::placeholder {
@@ -155,6 +178,17 @@ a {
 .form-control:focus {
     background: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+/* Fix Autofill Background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #2c3e50 inset !important;
+    -webkit-text-fill-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Typography & Titles */

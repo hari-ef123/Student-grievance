@@ -11,18 +11,24 @@
 </head>
 
 <body>
-    <div style="display: flex; align-items: center; gap: 10px;">
-        <a href="index.html" class="btn btn-outline"
-            style="padding: 5px 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px;">
-            <i class="fas fa-home"></i> Home
+    <div class="navbar glass-card" style="position: absolute; top: 0; width: 95%; margin: 20px;">
+        <a href="index.html" class="logo"
+            style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-university"></i> SGS
         </a>
-        <button onclick="window.location.reload()" class="btn btn-outline"
-            style="padding: 5px 10px; font-size: 0.9rem; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"
-            title="Refresh Page">
-            <i class="fas fa-sync-alt"></i>
-        </button>
-        <a href="dashboard.html" class="btn btn-outline" style="padding: 8px 20px;">Back to Dashboard</a>
-    </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <a href="index.html" class="btn btn-outline"
+                style="padding: 5px 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 5px;">
+                <i class="fas fa-home"></i> Home
+            </a>
+            <button onclick="window.location.reload()" class="btn btn-outline"
+                style="padding: 5px 10px; font-size: 0.9rem; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;"
+                title="Refresh Page">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <a href="dashboard.html" class="btn btn-outline" style="padding: 8px 20px; font-size: 0.9rem;">Back to
+                Dashboard</a>
+        </div>
     </div>
 
     <div class="container animate-fade-in" style="margin-top: 100px;">
@@ -56,6 +62,31 @@
             </div>
             <h2 id="popupTitle">Success!</h2>
             <p id="popupMessage">Operation completed successfully.</p>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" class="popup-overlay">
+        <div class="glass-card" style="max-width: 400px; width: 90%; padding: 30px;">
+            <h3><i class="fas fa-star" style="color: #f1c40f;"></i> Rate Resolution</h3>
+            <p style="opacity: 0.8; margin-bottom: 20px;">Was your grievance resolved to your satisfaction?</p>
+
+            <div class="star-rating"
+                style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 2rem;">
+                <i class="far fa-star rating-star" data-val="1" style="cursor: pointer; color: #f1c40f;"></i>
+                <i class="far fa-star rating-star" data-val="2" style="cursor: pointer; color: #f1c40f;"></i>
+                <i class="far fa-star rating-star" data-val="3" style="cursor: pointer; color: #f1c40f;"></i>
+                <i class="far fa-star rating-star" data-val="4" style="cursor: pointer; color: #f1c40f;"></i>
+                <i class="far fa-star rating-star" data-val="5" style="cursor: pointer; color: #f1c40f;"></i>
+            </div>
+
+            <textarea id="feedbackText" class="form-control" rows="3"
+                placeholder="Additional feedback (optional)"></textarea>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button onclick="closeFeedback()" class="btn btn-outline" style="flex: 1;">Cancel</button>
+                <button onclick="submitFeedback()" class="btn btn-primary" style="flex: 1;">Submit</button>
+            </div>
         </div>
     </div>
 
@@ -116,6 +147,95 @@
             }
         });
 
+        let selectedRating = 0;
+        let currentFeedbackComplaintId = null;
+
+        document.querySelectorAll('.rating-star').forEach(star => {
+            star.addEventListener('click', function () {
+                selectedRating = parseInt(this.getAttribute('data-val'));
+                highlightStars(selectedRating);
+            });
+            star.addEventListener('mouseover', function () {
+                highlightStars(parseInt(this.getAttribute('data-val')));
+            });
+            star.addEventListener('mouseout', function () {
+                highlightStars(selectedRating);
+            });
+        });
+
+        function highlightStars(val) {
+            document.querySelectorAll('.rating-star').forEach(star => {
+                const sVal = parseInt(star.getAttribute('data-val'));
+                if (sVal <= val) {
+                    star.classList.replace('far', 'fas');
+                } else {
+                    star.classList.replace('fas', 'far');
+                }
+            });
+        }
+
+        function openFeedback(id) {
+            currentFeedbackComplaintId = id;
+            selectedRating = 0;
+            highlightStars(0);
+            document.getElementById('feedbackText').value = '';
+            document.getElementById('feedbackModal').classList.add('active');
+        }
+
+        function closeFeedback() {
+            document.getElementById('feedbackModal').classList.remove('active');
+        }
+
+        async function submitFeedback() {
+            if (selectedRating === 0) {
+                alert("Please select a star rating!");
+                return;
+            }
+            const feedbackText = document.getElementById('feedbackText').value;
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/feedback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        complaint_id: currentFeedbackComplaintId,
+                        rating: selectedRating,
+                        feedback_text: feedbackText
+                    })
+                });
+                if (response.ok) {
+                    showStatusPopup('Thank You!', 'Your feedback has been submitted.');
+                    closeFeedback();
+                    // Optional: refresh to hide button
+                } else {
+                    const error = await response.json();
+                    showStatusPopup('Error', error.detail || 'Feedback submission failed.', 'error');
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/api/complaints/my`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401) {
+                    showStatusPopup('Session Expired', 'Please login again.', 'error', 'login.html');
+                    return;
+                }
+
+                const data = await response.json();
+                renderComplaints(data);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('status-container').innerHTML =
+                    '<div class="glass-card text-center"><p style="color:#ff6b6b">Error loading data. Ensure backend is running.</p></div>';
+            }
+        });
+
         function renderComplaints(data) {
             const container = document.getElementById('status-container');
             if (data.length > 0) {
@@ -127,9 +247,9 @@
                     const html = `
                          <div class="glass-card" style="display: flex; justify-content: space-between; align-items: center;">
                              <div>
-                                 <h3>${item.category}</h3>
+                                 <h3>${item.title || item.category}</h3>
                                  <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 5px;">${item.description}</p>
-                                 <p style="font-size: 0.8rem; opacity: 0.6;">Submitted on: ${date}</p>
+                                 <p style="font-size: 0.8rem; opacity: 0.6;">Submitted on: ${date} | Category: ${item.category}</p>
                                  ${item.attachment ? (() => {
                             let path = item.attachment.replace(/\\/g, '/');
                             if (path.includes('/uploads/')) {
@@ -147,8 +267,9 @@
                         })() : ''}
                                  ${item.admin_remark ? `<p style="margin-top: 10px; color: #f1c40f;"><strong>Admin:</strong> ${item.admin_remark}</p>` : ''}
                              </div>
-                             <div class="text-center">
+                             <div class="text-center" style="display: flex; flex-direction: column; gap: 10px;">
                                  <span class="status-badge ${statusClass}">${item.status}</span>
+                                 ${item.status === 'Resolved' ? `<button onclick="openFeedback('${item.id}')" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;"><i class="fas fa-star"></i> Rate Resolution</button>` : ''}
                              </div>
                          </div>
                     `;
