@@ -47,11 +47,13 @@
                     </div>
                     <div class="form-group">
                         <label>Phone Number</label>
-                        <input type="text" name="phone" class="form-control">
+                        <input type="tel" name="phone" id="phone" class="form-control" pattern="[0-9]{10}"
+                            maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                            placeholder="Enter 10-digit number" title="Please enter exactly 10 digits">
                     </div>
                     <div class="form-group">
                         <label>Email (Account ID)</label>
-                        <input type="email" id="profileEmail" class="form-control" disabled>
+                        <input type="email" id="profileEmail" name="email" class="form-control">
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">Update
@@ -133,7 +135,8 @@
                     localStorage.setItem('user_name', result.name);
                     showStatusPopup('Updated!', 'Your profile has been updated.');
                 } else {
-                    showStatusPopup('Error', 'Failed to update profile.', 'error');
+                    const errorData = await response.json();
+                    showStatusPopup('Error', errorData.detail || 'Failed to update profile.', 'error');
                 }
             } catch (err) { showStatusPopup('Error', 'Connection failed.', 'error'); }
         });

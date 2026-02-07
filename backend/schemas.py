@@ -20,6 +20,7 @@ class UserResponse(UserBase):
 
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
+    email: Optional[str] = None
     register_number: Optional[str] = None
     department: Optional[str] = None
     year: Optional[str] = None

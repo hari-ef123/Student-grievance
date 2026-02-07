@@ -85,6 +85,11 @@ async def update_profile(update: schemas.ProfileUpdate, token: str = Depends(aut
         raise HTTPException(status_code=404, detail="User not found")
     
     if update.name: user.name = update.name
+    if update.email and update.email != user.email:
+        existing_user = await models.User.find_one(models.User.email == update.email)
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already taken by another user")
+        user.email = update.email
     if update.register_number: user.register_number = update.register_number
     if update.department: user.department = update.department
     if update.year: user.year = update.year

@@ -143,20 +143,16 @@
                     return;
                 }
 
-                // Ensure is_anonymous is sent in a way FastAPI Form bool can easily parse (true or false)
-                formData.set('is_anonymous', this.querySelector('[name="is_anonymous"]').checked ? 'true' : 'false');
-
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalBtnText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-                submitBtn.disabled = true;
+                // Correctly handle checkbox value for FormData
+                const isAnon = this.querySelector('[name="is_anonymous"]').checked;
+                formData.set('is_anonymous', isAnon);
 
                 try {
-                    // Using relative URL to avoid CORS/IP mismatch issues
                     const response = await fetch(`${CONFIG.API_BASE_URL}/api/complaints`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`
+                            // Content-Type must NOT be set when sending FormData
                         },
                         body: formData
                     });
