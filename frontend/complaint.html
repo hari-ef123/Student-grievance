@@ -134,48 +134,111 @@
             document.querySelector('form').addEventListener('submit', async function (event) {
                 event.preventDefault();
 
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                submitBtn.disabled = true;
+
                 const formData = new FormData(this);
-                const incidentDateString = formData.get('incident_date');
 
-                // Final validation for future date
-                if (new Date(incidentDateString) > new Date()) {
-                    showStatusPopup('Error', 'Incident Date cannot be in the future. Please select a correct date.', 'error');
-                    return;
-                }
-
-                // Correctly handle checkbox value for FormData
-                const isAnon = this.querySelector('[name="is_anonymous"]').checked;
-                formData.set('is_anonymous', isAnon);
+                // Get the file input
+                const fileInput = document.getElementById('attachment');
 
                 try {
+                    // Client-side image compression if a file is selected
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        if (file.type.startsWith('image/')) {
+                            try {
+                                const compressedFile = await compressImage(file);
+                                formData.set('attachment', compressedFile, file.name);
+                            } catch (e) {
+                                console.warn('Image compression failed, sending original:', e);
+                            }
+                        }
+                    }
+
+                    // Handle Checkbox
+                    const isAnon = this.querySelector('[name="is_anonymous"]').checked;
+                    formData.set('is_anonymous', isAnon);
+
                     const response = await fetch(`${CONFIG.API_BASE_URL}/api/complaints`, {
                         method: 'POST',
+                        body: formData,
                         headers: {
-                            'Authorization': `Bearer ${token}`
-                            // Content-Type must NOT be set when sending FormData
-                        },
-                        body: formData
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
                     });
 
                     if (response.ok) {
                         showStatusPopup('Submitted!', 'Complaint Submitted Successfully!', 'success', 'dashboard.html');
                     } else {
-                        const text = await response.text();
+                        let errorMessage = 'Submission failed';
                         try {
-                            const error = JSON.parse(text);
-                            showStatusPopup('Submission Failed', error.detail || 'Error occurred', 'error');
+                            const errorData = await response.json();
+                            errorMessage = errorData.detail || errorMessage;
                         } catch (e) {
-                            showStatusPopup('Server Error', 'Unexpected response from server.', 'error');
+                            if (response.status === 413) {
+                                errorMessage = "File too large. Please upload a smaller file.";
+                            } else if (response.status === 500) {
+                                errorMessage = "Server error. Please try again later.";
+                            } else {
+                                errorMessage = `Server responded with ${response.status}`;
+                            }
                         }
+                        showStatusPopup('Error', errorMessage, 'error');
                     }
                 } catch (err) {
-                    console.error('Network/Fetch Error:', err);
-                    showStatusPopup('Connection Error', 'Ensure Backend is running.', 'error');
+                    console.error('Fetch error:', err);
+                    showStatusPopup('Connection Error', 'Could not reach the server. Check your internet or try again later.', 'error');
                 } finally {
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
                 }
             });
+
+            // Image Compression Helper
+            function compressImage(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.src = event.target.result;
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 1024;
+                            const MAX_HEIGHT = 1024;
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > MAX_WIDTH) {
+                                    height *= MAX_WIDTH / width;
+                                    width = MAX_WIDTH;
+                                }
+                            } else {
+                                if (height > MAX_HEIGHT) {
+                                    width *= MAX_HEIGHT / height;
+                                    height = MAX_HEIGHT;
+                                }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            // Compress to JPEG with 0.7 quality
+                            canvas.toBlob((blob) => {
+                                resolve(blob);
+                            }, 'image/jpeg', 0.7);
+                        };
+                        img.onerror = (e) => reject(e);
+                    };
+                    reader.onerror = (e) => reject(e);
+                });
+            }
         </script>
 </body>
 
