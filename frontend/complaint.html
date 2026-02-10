@@ -173,17 +173,22 @@
                     if (response.ok) {
                         showStatusPopup('Submitted!', 'Complaint Submitted Successfully!', 'success', 'dashboard.html');
                     } else {
+                        if (response.status === 401) {
+                            showStatusPopup('Session Expired', "Your session has expired. Please login again.", 'error', 'login.html');
+                            return;
+                        }
+
+                        if (response.status === 413) {
+                            showStatusPopup('File Too Large', "The uploaded file is too large. Please resize it or choose a smaller file.", 'error');
+                            return;
+                        }
+
                         let errorMessage = 'Submission failed';
                         try {
                             const errorData = await response.json();
                             errorMessage = errorData.detail || errorMessage;
                         } catch (e) {
-                            if (response.status === 413) {
-                                errorMessage = "File too large. Please upload a smaller file.";
-                            } else if (response.status === 401) {
-                                showStatusPopup('Session Expired', "Your session has expired. Please login again.", 'error', 'login.html');
-                                return;
-                            } else if (response.status === 500) {
+                            if (response.status === 500) {
                                 errorMessage = "Server error. Please try again later.";
                             } else {
                                 errorMessage = `Server responded with ${response.status}`;
