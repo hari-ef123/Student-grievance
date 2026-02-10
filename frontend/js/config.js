@@ -1,5 +1,3 @@
 const CONFIG = {
-    API_BASE_URL: 'http://localhost:8000'
+    API_BASE_URL: 'https://student-grievance-vtc8.onrender.com'
 };
-
-
