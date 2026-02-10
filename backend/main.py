@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from typing import List, Optional
 from datetime import datetime
@@ -21,6 +21,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    print(f"Global Exception: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}"},
+    )
 
 @app.on_event("startup")
 async def startup_event():
@@ -74,6 +83,8 @@ async def register(user: schemas.UserCreate):
 @app.get("/api/profile", response_model=schemas.UserResponse)
 async def get_profile(token: str = Depends(auth.oauth2_scheme)):
     payload = auth.decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     user = await models.User.get(payload.get("user_id"))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -82,6 +93,8 @@ async def get_profile(token: str = Depends(auth.oauth2_scheme)):
 @app.put("/api/profile", response_model=schemas.UserResponse)
 async def update_profile(update: schemas.ProfileUpdate, token: str = Depends(auth.oauth2_scheme)):
     payload = auth.decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     user = await models.User.get(payload.get("user_id"))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -124,7 +137,10 @@ async def create_complaint(
     token: str = Depends(auth.oauth2_scheme)
 ):
     try:
+    try:
         payload = auth.decode_token(token)
+        if not payload:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
         user_id = payload.get("user_id")
         
         attachment_db_path = None
@@ -166,6 +182,8 @@ async def get_my_complaints(
     token: str = Depends(auth.oauth2_scheme)
 ):
     payload = auth.decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     user_id = payload.get("user_id")
     query = {"student_id": user_id}
     if status: query["status"] = status
@@ -260,6 +278,8 @@ async def update_complaint_status(id: str, update: schemas.ComplaintUpdate, toke
 @app.get("/api/notifications", response_model=List[schemas.NotificationResponse])
 async def get_notifications(token: str = Depends(auth.oauth2_scheme)):
     payload = auth.decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     notifs = await models.Notification.find(models.Notification.user_id == payload.get("user_id")).sort("-created_at").to_list()
     return [schemas.NotificationResponse(id=str(n.id), message=n.message, is_read=n.is_read, created_at=n.created_at) for n in notifs]
 
@@ -286,6 +306,8 @@ async def submit_feedback(fb: schemas.FeedbackCreate, token: str = Depends(auth.
 @app.post("/api/support/message")
 async def send_support_msg(msg: schemas.SupportMessageCreate, token: str = Depends(auth.oauth2_scheme)):
     payload = auth.decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     new_msg = models.SupportMessage(user_id=payload.get("user_id"), message=msg.message)
     await new_msg.insert()
     return {"message": "Message sent to support"}

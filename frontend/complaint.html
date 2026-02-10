@@ -180,6 +180,9 @@
                         } catch (e) {
                             if (response.status === 413) {
                                 errorMessage = "File too large. Please upload a smaller file.";
+                            } else if (response.status === 401) {
+                                showStatusPopup('Session Expired', "Your session has expired. Please login again.", 'error', 'login.html');
+                                return;
                             } else if (response.status === 500) {
                                 errorMessage = "Server error. Please try again later.";
                             } else {
