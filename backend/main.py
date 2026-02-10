@@ -36,6 +36,8 @@ async def startup_event():
     ])
 
 # Mount Uploads for Static Access
+if not os.path.exists("uploads"):
+    os.makedirs("uploads")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # --- Auth & Profile Routes ---
@@ -341,6 +343,4 @@ async def get_analytics(token: str = Depends(auth.oauth2_scheme)):
 async def read_root():
     return {"message": "Student Grievance API v2 is running"}
 
-if not os.path.exists("uploads"):
-    os.makedirs("uploads")
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
