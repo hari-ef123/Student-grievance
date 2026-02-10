@@ -137,7 +137,6 @@ async def create_complaint(
     token: str = Depends(auth.oauth2_scheme)
 ):
     try:
-    try:
         payload = auth.decode_token(token)
         if not payload:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
